@@ -1,0 +1,1636 @@
+<title>Würfelpad</title>
+<style>
+  :root{
+    --ink:#1B2420; --ink-soft:#5B6660; --paper:#EEF1EA; --paper-2:#E1E6DA; --line:rgba(27,36,32,0.14);
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){ :root{ --paper:#1A221E; --paper-2:#212B25; --ink:#EBEEE8; --ink-soft:#93A098; --line:rgba(235,238,232,0.14); } }
+  :root[data-theme="dark"]{ --paper:#1A221E; --paper-2:#212B25; --ink:#EBEEE8; --ink-soft:#93A098; --line:rgba(235,238,232,0.14); }
+  :root[data-theme="light"]{ --paper:#EEF1EA; --paper-2:#E1E6DA; --ink:#1B2420; --ink-soft:#5B6660; --line:rgba(27,36,32,0.14); }
+
+  /* ---- Per-game themes: each sets the "t-" tokens used by header/bottom bar/accents ---- */
+  body.theme-kniffel, body.theme-extrem{
+    --t-head-from:#1F4C3A; --t-head-to:#13302A; --t-accent:#C23B3B; --t-accent-ink:#FBF6EF;
+    --t-gold:#9C7A1E; --t-card:var(--paper-2); --t-page:var(--paper); --t-ink:var(--ink); --t-ink-soft:var(--ink-soft);
+    --t-display:var(--font-display); --t-tile-bg: linear-gradient(160deg,#1F4C3A,#13302A); --t-tile-ink:#FBF6EF;
+  }
+  @media (prefers-color-scheme: dark){
+    body.theme-kniffel, body.theme-extrem{ --t-accent:#E2756F; --t-gold:#D9B65C; }
+  }
+  :root[data-theme="dark"] body.theme-kniffel, :root[data-theme="dark"] body.theme-extrem{ --t-accent:#E2756F; --t-gold:#D9B65C; }
+
+  /* Qwixx and the Clever series commit to their real-product look (bright sheet / black box)
+     rather than following the OS theme — pin the shared tokens so every component stays legible. */
+  body.theme-qwixx{
+    --paper:#F7F5EC; --paper-2:#EFEBDC; --ink:#1B2420; --ink-soft:#5B6660; --line:rgba(27,36,32,0.14);
+    --t-head-from:#FFFFFF; --t-head-to:#F1EEE4; --t-accent:#C7342E; --t-accent-ink:#FFFFFF;
+    --t-gold:#B8860E; --t-card:var(--paper-2); --t-page:var(--paper);
+    --t-display:var(--font-body); --t-tile-bg:#FBFAF4; --t-tile-ink:#1B2420;
+  }
+  body.theme-gsc, body.theme-doppelt, body.theme-dreimal{
+    --paper:#FBFAF5; --paper-2:#F4F2EA; --ink:#1B2420; --ink-soft:#5B6660; --line:rgba(27,36,32,0.14);
+    --t-head-from:#15161B; --t-head-to:#07080A; --t-accent-ink:#F4F2EA;
+    --t-card:#F4F2EA; --t-page:#121317;
+    --t-display:var(--font-body); --t-tile-bg: linear-gradient(160deg,#17181D,#07080A); --t-tile-ink:#F4F2EA;
+  }
+  body.theme-gsc{ --t-accent:#39E0CE; --t-gold:#39E0CE; }
+  body.theme-doppelt{ --t-accent:#F252B0; --t-gold:#F252B0; }
+  body.theme-dreimal{ --t-accent:#F0C23E; --t-gold:#F0C23E; }
+
+  /* Clever series: match the real pad — an outlined colour frame on the black board, not a filled bar */
+  body.theme-gsc .card, body.theme-doppelt .card, body.theme-dreimal .card{
+    background: rgba(244,242,234,0.035); border:2px solid var(--sec-color, rgba(244,242,234,0.22)); border-radius:16px;
+  }
+  body.theme-gsc .sec-head, body.theme-doppelt .sec-head, body.theme-dreimal .sec-head{
+    background:transparent; color:var(--sec-color,#F4F2EA); padding:10px 14px 0; font-size:0.98rem; letter-spacing:0.02em;
+  }
+  body.theme-gsc .sec-head .ssub, body.theme-doppelt .sec-head .ssub, body.theme-dreimal .sec-head .ssub{ color:#F4F2EA; }
+  body.theme-gsc .bonus-row, body.theme-doppelt .bonus-row, body.theme-gsc .subtotal, body.theme-doppelt .subtotal, body.theme-dreimal .subtotal{ background:transparent; }
+  /* the card is now a dark outline frame, not a light sheet — flip the generic row/stepper/subtotal text to light */
+  body.theme-gsc .row-label .name, body.theme-doppelt .row-label .name, body.theme-dreimal .row-label .name{ color:#F4F2EA; }
+  body.theme-gsc .row-label .hint, body.theme-doppelt .row-label .hint, body.theme-dreimal .row-label .hint,
+  body.theme-gsc .subtotal, body.theme-doppelt .subtotal, body.theme-dreimal .subtotal,
+  body.theme-gsc .legend-line, body.theme-doppelt .legend-line, body.theme-dreimal .legend-line{ color:rgba(244,242,234,0.62); }
+  body.theme-gsc .subtotal b, body.theme-doppelt .subtotal b, body.theme-dreimal .subtotal b{ color:#F4F2EA; }
+  body.theme-gsc .stepper button, body.theme-doppelt .stepper button, body.theme-dreimal .stepper button{ border-color:rgba(244,242,234,0.3); color:#F4F2EA; background:transparent; }
+  body.theme-gsc .stepper .count, body.theme-doppelt .stepper .count, body.theme-dreimal .stepper .count{ color:#F4F2EA; }
+  body.theme-gsc .tracker-dice .tdie, body.theme-doppelt .tracker-dice .tdie, body.theme-dreimal .tracker-dice .tdie,
+  body.theme-gsc .tracker-pips button, body.theme-doppelt .tracker-pips button, body.theme-dreimal .tracker-pips button{ background:transparent; border-color:rgba(244,242,234,0.35); }
+  body.theme-gsc .tracker-pips button.on, body.theme-doppelt .tracker-pips button.on, body.theme-dreimal .tracker-pips button.on{ background:rgba(244,242,234,0.55); border-color:rgba(244,242,234,0.55); }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--t-page, var(--paper)); color:var(--ink); font-family:var(--font-body);
+    -webkit-tap-highlight-color:transparent; overscroll-behavior-y:contain; padding-bottom:88px;
+    transition: background .2s;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; } }
+  button{font-family:inherit;}
+  button:focus-visible, input:focus-visible{ outline:2px solid var(--t-accent, #C23B3B); outline-offset:2px; }
+
+  /* ---------- Header ---------- */
+  header.app-top{
+    position:sticky; top:0; z-index:20;
+    background: linear-gradient(180deg, var(--t-head-from,#1F4C3A), var(--t-head-to,#13302A));
+    color: var(--t-accent-ink, #FBF6EF);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+  }
+  body.theme-gsc header.app-top{ box-shadow:0 0 18px rgba(57,224,206,0.25), 0 3px 10px rgba(0,0,0,0.5); }
+  body.theme-doppelt header.app-top{ box-shadow:0 0 18px rgba(242,82,176,0.25), 0 3px 10px rgba(0,0,0,0.5); }
+  body.theme-dreimal header.app-top{ box-shadow:0 0 18px rgba(240,194,62,0.25), 0 3px 10px rgba(0,0,0,0.5); }
+  body.theme-qwixx header.app-top{ color:#1B2420; box-shadow:0 1px 0 var(--line), 0 3px 10px rgba(0,0,0,0.06); border-bottom:3px solid #C7342E; }
+
+  .app-top-inner{ display:flex; align-items:center; gap:10px; padding:12px 16px 8px; }
+  .back-btn{
+    border:none; background:rgba(255,255,255,0.14); color:inherit; width:34px; height:34px; border-radius:9px;
+    font-size:1.05rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  body.theme-qwixx .back-btn{ background:rgba(0,0,0,0.06); }
+  .brand{ display:flex; align-items:center; gap:8px; font-family:var(--t-display,var(--font-display)); font-size:1.08rem; letter-spacing:0.01em; flex:1; min-width:0; }
+  .brand .gname{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  body.theme-gsc .brand, body.theme-doppelt .brand, body.theme-dreimal .brand{
+    text-transform:uppercase; font-weight:800; letter-spacing:0.06em; font-size:0.98rem;
+    text-shadow: 0 0 10px var(--t-gold), 0 0 2px var(--t-gold);
+  }
+
+  .player-tabs{ display:flex; gap:8px; overflow-x:auto; padding:0 16px 12px; scrollbar-width:none; }
+  .player-tabs::-webkit-scrollbar{display:none;}
+  .ptab{
+    flex:0 0 auto; display:flex; align-items:baseline; gap:6px; border:1px solid rgba(255,255,255,0.28);
+    background:rgba(0,0,0,0.15); color:rgba(255,255,255,0.88); border-radius:999px; padding:7px 13px;
+    font-size:0.86rem; cursor:pointer; white-space:nowrap; transition: background .15s, border-color .15s;
+  }
+  body.theme-qwixx .ptab{ border-color:rgba(0,0,0,0.18); background:rgba(0,0,0,0.04); color:rgba(27,36,32,0.8); }
+  .ptab .tot{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:0.82rem; opacity:0.85; }
+  .ptab.active{ background:var(--t-accent); border-color:var(--t-accent); color:var(--t-accent-ink); font-weight:700; }
+  .ptab.leader:not(.active){ border-color:var(--t-gold); color:var(--t-gold); }
+  .ptab.leader:not(.active) .tot{ color:var(--t-gold); opacity:1; }
+
+  .toast{
+    position:fixed; top:8px; left:50%; transform:translate(-50%,-14px); z-index:40;
+    background:var(--t-accent,#C23B3B); color:var(--t-accent-ink,#fff); padding:9px 16px; border-radius:999px;
+    font-size:0.86rem; font-weight:600; opacity:0; pointer-events:none; transition: opacity .2s, transform .2s;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  /* ---------- Picker ---------- */
+  .picker{ max-width:640px; margin:0 auto; padding:28px 18px 40px; }
+  .picker h1{ font-family:var(--font-display); font-size:1.6rem; margin:0 0 4px; text-wrap:balance; color:var(--ink); }
+  .picker p.sub{ color:var(--ink-soft); margin:0 0 22px; font-size:0.92rem; }
+  .tile-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:420px){ .tile-grid{ grid-template-columns:1fr; } }
+  .tile{
+    border:none; cursor:pointer; border-radius:16px; padding:18px 16px; text-align:left;
+    display:flex; flex-direction:column; gap:10px; min-height:118px; position:relative; overflow:hidden;
+  }
+  .tile .tname{ font-size:1.08rem; font-weight:700; line-height:1.2; }
+  .tile .tsub{ font-size:0.78rem; opacity:0.75; }
+  .tile .tdots{ display:flex; gap:5px; margin-top:auto; }
+  .tile .tdots span{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .tile.kniffel-fam{ background:linear-gradient(160deg,#1F4C3A,#13302A); color:#FBF6EF; }
+  .tile.qwixx-fam{ background:#FBFAF4; color:#1B2420; border:1px solid var(--line); }
+  .tile.clever-fam{ background:linear-gradient(160deg,#17181D,#07080A); color:#F4F2EA; }
+  .tile.clever-fam .tname{ text-transform:uppercase; letter-spacing:0.05em; font-weight:800; }
+  .tile.gsc .tname{ text-shadow:0 0 10px #39E0CE; }
+  .tile.doppelt .tname{ text-shadow:0 0 10px #F252B0; }
+  .tile.dreimal .tname{ text-shadow:0 0 10px #F0C23E; }
+
+  /* ---------- Setup ---------- */
+  .setup{ max-width:520px; margin:0 auto; padding:22px 18px 40px; }
+  .setup h1{ font-family:var(--t-display,var(--font-display)); font-size:1.4rem; margin:0 0 4px; text-wrap:balance; color:var(--ink); }
+  .setup p.sub{ color:var(--ink-soft); margin:0 0 20px; font-size:0.9rem; }
+  .player-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .player-row input{ flex:1; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:10px; padding:11px 12px; font-size:1rem; }
+  .icon-btn{ border:1px solid var(--line); background:transparent; color:var(--ink-soft); width:38px; height:38px; border-radius:10px; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .add-player{ width:100%; margin-top:4px; padding:12px; border-radius:10px; border:1px dashed var(--line); background:transparent; color:var(--ink-soft); font-size:0.92rem; cursor:pointer; }
+  .ruleset-note{ margin-top:20px; padding:14px 16px; border-radius:var(--radius); background:var(--paper-2); border:1px solid var(--line); font-size:0.85rem; color:var(--ink-soft); }
+  .ruleset-note b{ color:var(--ink); }
+  .start-btn{ width:100%; margin-top:22px; padding:15px; border-radius:12px; border:none; background:var(--t-accent,#C23B3B); color:var(--t-accent-ink,#fff); font-size:1.05rem; font-weight:700; cursor:pointer; }
+  .start-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  /* ---------- Sheet shared ---------- */
+  main.sheet{ max-width:580px; margin:0 auto; padding:14px 14px 20px; }
+  .info-line{ font-size:0.78rem; color: color-mix(in srgb, var(--t-accent-ink,#fff) 55%, transparent); margin:0 4px 12px; }
+  body.theme-qwixx .info-line, body.theme-kniffel .info-line, body.theme-extrem .info-line{ color:var(--ink-soft); }
+  .section-label{ text-transform:uppercase; font-size:0.72rem; letter-spacing:0.09em; color:var(--ink-soft); font-weight:700; margin:18px 4px 6px; }
+  .section-label:first-child{ margin-top:4px; }
+  .card{ background:var(--t-card,var(--paper-2)); border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); margin-bottom:14px; }
+  .sec-head{ display:flex; align-items:center; justify-content:space-between; padding:10px 14px; color:#fff; font-weight:700; font-size:0.92rem; }
+  .sec-head .ssub{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700; font-size:0.92rem; }
+  .row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--line); }
+  .row:last-child{ border-bottom:none; }
+  .row-label{ flex:1; min-width:0; }
+  .row-label .name{ font-size:0.96rem; font-weight:600; }
+  .row-label .hint{ font-size:0.74rem; color:var(--ink-soft); margin-top:1px; }
+  .num-input{ width:4.4rem; text-align:right; border:none; border-bottom:2px solid var(--line); background:transparent; color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:1.08rem; padding:4px 2px; }
+  .num-input:focus{ border-bottom-color:var(--t-accent,#C23B3B); outline:none; }
+  .num-input::placeholder{ color:var(--ink-soft); opacity:0.5; }
+  .fixed-choice{ display:flex; gap:6px; flex:0 0 auto; }
+  .fixed-choice button{ border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--ink-soft); font-family:var(--font-mono); font-size:0.84rem; padding:6px 11px; cursor:pointer; font-variant-numeric:tabular-nums; }
+  .fixed-choice button.yes.on{ background:var(--t-accent,#C23B3B); color:var(--t-accent-ink,#fff); border-color:var(--t-accent,#C23B3B); font-weight:700; }
+  .fixed-choice button.no.on{ background:var(--ink-soft); color:var(--paper); border-color:var(--ink-soft); }
+  .bonus-row{ background:linear-gradient(90deg, rgba(156,122,30,0.08), transparent); padding:11px 14px; display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; color:var(--ink-soft); border-top:1px solid var(--line); }
+  .bonus-row .val{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--t-gold,#9C7A1E); font-weight:700; }
+  .kbonus-row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--line); }
+  .kbonus-row .row-label .name{ font-size:0.88rem; }
+  .stepper{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+  .stepper button{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink); font-size:1rem; cursor:pointer; }
+  .stepper button:disabled{ opacity:0.3; cursor:not-allowed; }
+  .stepper .count{ font-family:var(--font-mono); min-width:1.4em; text-align:center; font-variant-numeric:tabular-nums; }
+  .subtotal{ display:flex; justify-content:space-between; padding:12px 14px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:0.9rem; color:var(--ink-soft); background:var(--paper); border-top:1px solid var(--line); }
+  .subtotal b{ color:var(--ink); font-size:0.98rem; }
+
+  /* ---------- Clever-engine: authentic sheet-style cells ---------- */
+  .legend-line{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 14px 2px; font-size:0.72rem; color:var(--ink-soft); }
+
+  /* crossed-off look shared by grid / scale / sum cells: number stays, a pen-stroke crosses it out */
+  .xcell{ position:relative; }
+  .xcell.on::after{ content:''; position:absolute; left:14%; right:14%; top:49%; height:2px; background:currentColor; transform:rotate(-16deg); border-radius:2px; }
+
+  .grid-wrap{ padding:10px 10px 2px; display:flex; flex-direction:column; gap:3px; }
+  .grid-row{ display:flex; gap:3px; align-items:center; }
+  .grid-row .rlabel{ min-width:2.8em; margin-right:2px; font-size:0.68rem; color:var(--ink-soft); flex:0 0 auto; white-space:nowrap; }
+  .gcell{ width:32px; height:32px; border-radius:5px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:0.86rem; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:0 0 auto; }
+  .gcell.on{ background:color-mix(in srgb, var(--sec-color,var(--t-accent)) 78%, var(--paper)); color:var(--ink); border-color:var(--sec-color,var(--t-accent)); font-weight:700; }
+  .gcell.wild{ font-style:italic; }
+  .grid-rowbonus{ flex:0 0 auto; margin-left:4px; }
+  .grid-colvals{ display:flex; gap:3px; padding:4px 0 2px; }
+  .grid-colvals .colcell{ width:32px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .grid-colvals span{ font-size:0.64rem; color:var(--ink-soft); font-family:var(--font-mono); }
+
+  .cellstrip{ display:flex; gap:4px; overflow-x:auto; padding:12px 14px; align-items:flex-end; }
+  .scell{ flex:0 0 auto; min-width:38px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .scell button{ width:36px; height:36px; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:0.82rem; cursor:pointer; }
+  .scell button.on{ background:color-mix(in srgb, var(--sec-color,var(--t-accent)) 78%, var(--paper)); color:var(--ink); border-color:var(--sec-color,var(--t-accent)); font-weight:700; }
+  .scell .slabel{ font-size:0.64rem; color:var(--ink-soft); font-family:var(--font-mono); white-space:nowrap; }
+
+  .sumcell{ flex:0 0 auto; min-width:38px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .sumcell input{ width:38px; height:36px; text-align:center; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:0.88rem; padding:0 2px; }
+  .sumcell input:focus{ border-color:var(--t-accent,#C23B3B); outline:none; }
+  .sumcell .shint{ font-size:0.64rem; color:var(--ink-soft); font-family:var(--font-mono); white-space:nowrap; }
+
+  .net-wrap{ display:flex; flex-wrap:wrap; gap:7px; padding:12px 14px; }
+  .ncell{ width:38px; height:38px; border-radius:50%; border:2px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:0.84rem; cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative; }
+  .ncell.circled{ border-color:var(--sec-color,var(--t-gold,#9C7A1E)); color:var(--sec-color,var(--t-gold,#9C7A1E)); font-weight:700; }
+  .ncell.crossed{ background:color-mix(in srgb, var(--sec-color,var(--t-accent)) 78%, var(--paper)); border-color:var(--sec-color,var(--t-accent)); color:var(--ink); font-weight:700; }
+  .ncell.crossed::after{ content:''; position:absolute; left:16%; right:16%; top:49%; height:2px; background:currentColor; transform:rotate(-16deg); border-radius:2px; }
+
+  .nline-wrap{ display:flex; gap:4px; overflow-x:auto; padding:12px 14px; }
+  .nline-cell{ flex:0 0 auto; width:40px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .nline-cell input{ width:40px; text-align:center; border:1px solid var(--line); border-radius:7px; background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:0.86rem; padding:6px 2px; }
+  .nline-cell input:disabled{ opacity:0.6; }
+  .nline-cell .star{ font-size:0.6rem; color:var(--ink-soft); font-family:var(--font-mono); }
+
+  .pairstrip{ display:flex; gap:10px; overflow-x:auto; padding:12px 14px; }
+  .pairgroup{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .pairgroup .phint{ font-size:0.6rem; color:var(--ink-soft); font-family:var(--font-mono); white-space:nowrap; }
+  .pairgroup .pboxes{ display:flex; align-items:center; gap:4px; }
+  .pairgroup input{ width:34px; height:34px; text-align:center; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:0.84rem; }
+  .pairgroup .pminus{ color:var(--ink-soft); font-size:0.9rem; }
+
+  /* bonus badges — small abstract glyphs, not literal brand icons */
+  .bchip{ display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 4px; border-radius:50%; font-size:0.62rem; font-weight:700; font-family:var(--font-body); color:#fff; flex:0 0 auto; cursor:default; letter-spacing:0.01em; border:1px solid rgba(255,255,255,0.3); }
+  .bchip-reroll{ background:#6b7069; }
+  .bchip-action{ background:#1c1c1c; }
+  .bchip-fox{ background:#A05B3A; }
+  .bchip-ask{ color:#fff; }
+  .bchip-write{ color:#fff; }
+
+  /* ---- top trackers: round legend + action pip rows, matching the real board ---- */
+  .tracker-wrap{ padding:4px 14px 10px; }
+  .tracker-dice{ display:flex; gap:6px; margin-bottom:8px; }
+  .tracker-dice .tdie{ width:26px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--paper); display:flex; align-items:center; justify-content:center; opacity:0.75; }
+  .tracker-row{ display:flex; align-items:center; gap:7px; margin-bottom:7px; }
+  .tracker-row:last-child{ margin-bottom:0; }
+  .tracker-icon{ width:24px; height:24px; border-radius:50%; background:#1c1c1c; color:#fff; font-size:0.6rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex:0 0 auto; border:1px solid rgba(255,255,255,0.3); }
+  .tracker-pips{ display:flex; gap:6px; }
+  .tracker-pips button{ width:22px; height:22px; border-radius:50%; border:1px solid var(--line); background:var(--paper); cursor:pointer; }
+  .tracker-pips button.on{ background:var(--ink-soft); border-color:var(--ink-soft); }
+
+  .fox-row{ display:flex; align-items:center; gap:10px; padding:12px 14px; }
+
+  /* ---------- Qwixx ---------- */
+  .qrow{ display:flex; align-items:center; gap:8px; padding:8px 10px; }
+  .qrow .qlabel{ width:3.2rem; flex:0 0 auto; font-weight:700; font-size:0.86rem; color:#fff; text-align:center; border-radius:8px; padding:6px 0; }
+  .qcells{ display:flex; gap:4px; overflow-x:auto; flex:1; }
+  .qcell{ flex:0 0 auto; width:30px; height:34px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:0.78rem; cursor:pointer; }
+  .qcell.on{ color:#fff; font-weight:700; }
+  .qlock{ flex:0 0 auto; width:34px; height:34px; border-radius:8px; border:1px solid var(--line); background:var(--paper); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .qlock:disabled{ opacity:0.3; cursor:not-allowed; }
+  .qlock.on{ background:var(--t-gold,#B8860E); border-color:var(--t-gold,#B8860E); }
+  .qlock svg{ width:14px; height:14px; }
+  .qpenalty{ display:flex; align-items:center; gap:10px; padding:12px 14px; }
+  .qpbox{ width:30px; height:30px; border-radius:7px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:700; color:var(--ink-soft); }
+  .qpbox.on{ background:#C7342E; border-color:#C7342E; color:#fff; }
+
+  /* ---------- Ganz schön clever: sheet laid out like the paper pad ---------- */
+  .gsc-board{ display:flex; flex-direction:column; gap:10px; color:#F4F2EA; }
+  .gsc-area{ --a:#F4F2EA; border:2px solid var(--a); border-radius:14px; padding:8px 8px 9px; background:color-mix(in srgb, var(--a) 7%, #0E0F12); min-width:0; }
+  .gsc-area.neutral{ --a:rgba(244,242,234,0.28); background:#16171C; }
+  .gsc-head{ display:flex; justify-content:space-between; align-items:baseline; gap:6px; margin:0 2px 7px; }
+  .gsc-head .t{ color:var(--a); font-weight:800; text-transform:uppercase; letter-spacing:0.07em; font-size:0.76rem; }
+  .gsc-area.neutral .gsc-head .t{ color:#F4F2EA; }
+  .gsc-head .rule{ font-size:0.62rem; color:rgba(244,242,234,0.6); flex:1; text-align:right; }
+  .gsc-head .pts{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700; font-size:0.92rem; }
+  .gsc-duo{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .gsc-grid{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; align-items:center; justify-items:center; }
+  .gsc-strip{ display:grid; grid-template-columns:repeat(11,minmax(0,1fr)); gap:3px; }
+  .gsc-col{ display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; }
+  .gsc-cell{ width:100%; aspect-ratio:1; border:none; border-radius:6px; padding:0; background:var(--a); color:#121317; font-family:var(--font-mono); font-weight:700; font-size:clamp(0.64rem, 3vw, 0.95rem); font-variant-numeric:tabular-nums; display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
+  .gsc-cell.empty{ background:color-mix(in srgb, var(--a) 28%, #0E0F12); }
+  .gsc-cell.next{ outline:2px dashed #F4F2EA; outline-offset:1px; }
+  .gsc-cell.pre{ opacity:0.45; cursor:default; }
+  .gsc-cell.deco{ background:transparent; border:1.5px dashed color-mix(in srgb, var(--a) 60%, transparent); cursor:default; }
+  .gsc-cell.deco svg{ width:70%; height:70%; }
+  .gsc-cell .gx{ position:absolute; inset:8%; width:84%; height:84%; color:#121317; transform:rotate(-4deg); pointer-events:none; }
+  .gsc-sub{ font-family:var(--font-mono); font-size:0.6rem; color:rgba(244,242,234,0.6); line-height:1; min-height:0.6rem; white-space:nowrap; }
+  .gsc-sub.hit{ color:var(--a); font-weight:800; }
+  .gsc-slot{ display:flex; align-items:center; justify-content:center; min-height:20px; width:100%; }
+  .gsc-track{ display:grid; grid-template-columns:repeat(11,minmax(0,1fr)); gap:1px; margin:0 0 6px; text-align:center; }
+  .gsc-track .gsc-sub{ font-size:0.52rem; }
+
+  .gchip{ width:20px; height:20px; max-width:100%; flex:0 0 auto; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.6rem; font-weight:800; color:#F4F2EA; background:#2A2C33; border:1px solid rgba(244,242,234,0.35); opacity:0.38; transition:opacity .15s, box-shadow .15s; }
+  .gchip.sq{ border-radius:4px; color:#121317; border-color:transparent; }
+  .gchip svg{ width:72%; height:72%; }
+  .gchip.got{ opacity:1; box-shadow:0 0 0 2px #0E0F12, 0 0 0 3.5px #F4F2EA; }
+  .gchip-fox{ background:#A05B3A; }
+  .gchip-any{ background:conic-gradient(#F2C230 0 20%, #3B8FE0 0 40%, #45B65A 0 60%, #F0892E 0 80%, #A96BD8 0); }
+
+  .gsc-rounds{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+  .gsc-round{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .gsc-round button{ width:34px; height:34px; border-radius:50%; border:1.5px solid rgba(244,242,234,0.45); background:transparent; color:#F4F2EA; font-family:var(--font-mono); font-weight:700; cursor:pointer; padding:0; }
+  .gsc-round button.past{ background:rgba(244,242,234,0.16); }
+  .gsc-round button.cur{ background:var(--t-accent); border-color:var(--t-accent); color:#121317; }
+  .gsc-round button.off{ opacity:0.25; text-decoration:line-through; cursor:not-allowed; }
+  .gsc-trk{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .gsc-trk .lbl{ display:flex; align-items:center; gap:6px; width:6.2em; flex:0 0 auto; font-size:0.66rem; color:rgba(244,242,234,0.72); }
+  .gsc-trk .lbl .gchip{ opacity:1; }
+  .gsc-trk .slots{ display:flex; flex-wrap:wrap; gap:5px; flex:1; }
+  .gsc-trk .slots button{ width:24px; height:24px; border-radius:50%; border:1.5px dashed rgba(244,242,234,0.22); background:transparent; position:relative; padding:0; cursor:pointer; color:#F4F2EA; }
+  .gsc-trk .slots button.earned{ border:2px solid #F4F2EA; }
+  .gsc-trk .slots button.used{ border:2px solid rgba(244,242,234,0.45); }
+  .gsc-trk .slots button .gx{ position:absolute; inset:3px; width:calc(100% - 6px); height:calc(100% - 6px); color:#F4F2EA; }
+  .gsc-trk .count{ font-family:var(--font-mono); font-size:0.7rem; color:rgba(244,242,234,0.72); white-space:nowrap; }
+  .gsc-legend{ display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:11px; padding-top:9px; border-top:1px solid rgba(244,242,234,0.12); font-size:0.64rem; color:rgba(244,242,234,0.7); }
+  .gsc-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .gsc-legend .gchip{ opacity:1; width:18px; height:18px; }
+
+  .gsc-sum{ display:flex; flex-wrap:wrap; align-items:center; gap:5px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+  .gsc-sum .box{ --a:#F4F2EA; min-width:2.5em; padding:5px 6px; border-radius:7px; border:2px solid var(--a); text-align:center; font-weight:700; }
+  .gsc-sum .op{ color:rgba(244,242,234,0.55); }
+  .gsc-sum .fox{ display:inline-flex; align-items:center; gap:4px; }
+  .gsc-sum .fox .gchip{ opacity:1; }
+  .gsc-sum .box.total{ background:var(--t-accent); border-color:var(--t-accent); color:#121317; }
+
+  .die-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+  .die-grid button{ aspect-ratio:1; border-radius:12px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+  .die-grid button:disabled{ opacity:0.22; cursor:not-allowed; }
+  .die-hint{ font-size:0.82rem; color:var(--ink-soft); margin:-8px 0 14px; }
+
+  /* ---------- Bottom bar ---------- */
+  .bottom-bar{ position:fixed; left:0; right:0; bottom:0; z-index:20; background:linear-gradient(0deg, var(--t-head-to,#13302A), var(--t-head-from,#1F4C3A)); color:var(--t-accent-ink,#FBF6EF); display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); box-shadow:0 -3px 10px rgba(0,0,0,0.18); }
+  body.theme-qwixx .bottom-bar{ color:#1B2420; border-top:3px solid #C7342E; }
+  .bottom-bar .total-block .label{ font-size:0.66rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.7; }
+  .bottom-bar .total-block .num{ font-family:var(--t-display,var(--font-display)); font-size:1.5rem; font-variant-numeric:tabular-nums; line-height:1; }
+  .bottom-bar .actions{ display:flex; gap:7px; }
+  .ghost-btn{ border:1px solid rgba(255,255,255,0.35); background:transparent; color:inherit; border-radius:10px; padding:10px 12px; font-size:0.82rem; cursor:pointer; white-space:nowrap; }
+  body.theme-qwixx .ghost-btn{ border-color:rgba(0,0,0,0.25); }
+  @media (max-width:420px){
+    .bottom-bar{ padding-left:12px; padding-right:12px; }
+    .bottom-bar .actions{ gap:5px; min-width:0; }
+    .ghost-btn, .next-btn{ padding:9px 8px; font-size:0.76rem; }
+  }
+  .next-btn{ border:none; background:var(--t-accent,#C23B3B); color:var(--t-accent-ink,#fff); border-radius:10px; padding:10px 14px; font-size:0.84rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+
+  /* ---------- Overview modal ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(13,33,29,0.55); z-index:30; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity .18s; }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+  .drawer{ background:var(--paper); width:100%; max-width:560px; border-radius:18px 18px 0 0; padding:18px 18px calc(22px + env(safe-area-inset-bottom)); transform:translateY(12px); transition:transform .18s; color:var(--ink); }
+  .overlay.open .drawer{ transform:translateY(0); }
+  .drawer h2{ font-family:var(--font-display); font-size:1.2rem; margin:0 0 14px; }
+  .rank-row{ display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--line); font-size:0.95rem; }
+  .rank-row .r{ width:1.6em; color:var(--ink-soft); font-family:var(--font-mono); }
+  .rank-row .n{ flex:1; }
+  .rank-row .t{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700; }
+  .rank-row.lead .n, .rank-row.lead .t{ color:var(--t-gold,#9C7A1E); }
+  .drawer-close{ width:100%; margin-top:16px; padding:13px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--ink); font-size:0.95rem; cursor:pointer; }
+
+  .hidden{ display:none !important; }
+</style>
+
+<div class="toast" id="toast"></div>
+
+<header class="app-top">
+  <div class="app-top-inner">
+    <button class="back-btn hidden" id="backBtn" aria-label="Zurück">←</button>
+    <div class="brand"><span class="gname" id="brandName">Würfelpad</span></div>
+  </div>
+  <div class="player-tabs hidden" id="playerTabs"></div>
+</header>
+
+<div id="pickerView" class="picker">
+  <h1>Welches Spiel?</h1>
+  <p class="sub">Wählt ein Spiel, dann könnt ihr direkt loslegen.</p>
+  <div class="tile-grid" id="tileGrid"></div>
+</div>
+
+<div id="setupView" class="setup hidden">
+  <h1 id="setupTitle">Wer spielt mit?</h1>
+  <p class="sub">Trag die Namen ein &mdash; ihr gebt euch auf diesem Gerät einfach die Reihe nach, wenn ihr wechselt.</p>
+  <div id="playerRows"></div>
+  <button class="add-player" id="addPlayerBtn">+ Spieler hinzufügen</button>
+  <div class="ruleset-note" id="rulesetNote"></div>
+  <button class="start-btn" id="startBtn">Spiel starten</button>
+</div>
+
+<main id="sheetView" class="sheet hidden"></main>
+
+<div id="bottomBar" class="bottom-bar hidden">
+  <div class="total-block">
+    <div class="label">Gesamt</div>
+    <div class="num" id="bbTotal">0</div>
+  </div>
+  <div class="actions" id="bbActions"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="drawer">
+    <h2>Stand der Runde</h2>
+    <div id="rankList"></div>
+    <button class="drawer-close" id="closeOverlay">Schließen</button>
+  </div>
+</div>
+
+<div class="overlay" id="dieOverlay">
+  <div class="drawer">
+    <h2 id="dieTitle">Würfelwert</h2>
+    <div class="die-hint" id="dieHint"></div>
+    <div class="die-grid" id="dieGrid"></div>
+    <button class="drawer-close hidden" id="dieClear">Feld leeren</button>
+    <button class="drawer-close" id="dieCancel">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var STORE_KEY = "spielesammlung-wuerfelpad-v2";
+
+  // ---------- pip die icon (Kniffel family) ----------
+  var PIP_LAYOUTS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+  function pipSVG(face, size, color){
+    size = size || 18;
+    var cell = size/3, dots = PIP_LAYOUTS[face] || [], r = cell*0.17;
+    var circles = dots.map(function(idx){
+      var col = idx%3, row = Math.floor(idx/3), cx = col*cell+cell/2, cy = row*cell+cell/2;
+      return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+(color||'currentColor')+'"/>';
+    }).join('');
+    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" aria-hidden="true">' +
+      '<rect x="1" y="1" width="'+(size-2)+'" height="'+(size-2)+'" rx="'+(size*0.18)+'" fill="none" stroke="'+(color||'currentColor')+'" stroke-opacity="0.55" stroke-width="1.3"/>' + circles + '</svg>';
+  }
+  function lockSVG(size, color){
+    size = size||14;
+    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+      '<rect x="4" y="11" width="16" height="10" rx="2" fill="'+(color||'currentColor')+'"/>' +
+      '<path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="'+(color||'currentColor')+'" stroke-width="2.2" fill="none"/></svg>';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  }
+
+  // ===================================================================
+  // GAME DEFINITIONS
+  // ===================================================================
+  var UPPER_DEF = [
+    {key:'einser', label:'Einser', face:1, hint:'Summe aller gewürfelten Einsen'},
+    {key:'zweier', label:'Zweier', face:2, hint:'Summe aller gewürfelten Zweien'},
+    {key:'dreier', label:'Dreier', face:3, hint:'Summe aller gewürfelten Dreien'},
+    {key:'vierer', label:'Vierer', face:4, hint:'Summe aller gewürfelten Vieren'},
+    {key:'fuenfer', label:'Fünfer', face:5, hint:'Summe aller gewürfelten Fünfen'},
+    {key:'sechser', label:'Sechser', face:6, hint:'Summe aller gewürfelten Sechsen'}
+  ];
+
+  var GAMES = {
+    kniffel: {
+      label:'Kniffel', family:'kniffel', theme:'kniffel', turnMode:'sequential', diceCount:5, tileFam:'kniffel-fam',
+      bonusThreshold:63, bonusValue:35, kniffelBonusPerExtra:100, upper:UPPER_DEF,
+      lower:[
+        {key:'dreierpasch', label:'Dreierpasch', type:'number', hint:'Summe aller Würfel, mind. 3 gleiche'},
+        {key:'viererpasch', label:'Viererpasch', type:'number', hint:'Summe aller Würfel, mind. 4 gleiche'},
+        {key:'fullhouse', label:'Full House', type:'fixed', value:25, hint:'3 Gleiche + 2 Gleiche'},
+        {key:'kleinestrasse', label:'Kleine Straße', type:'fixed', value:30, hint:'4 Zahlen in Folge'},
+        {key:'grossestrasse', label:'Große Straße', type:'fixed', value:40, hint:'5 Zahlen in Folge'},
+        {key:'kniffel', label:'Kniffel', type:'fixed', value:50, hint:'5 gleiche Würfel', isKniffel:true},
+        {key:'chance', label:'Chance', type:'number', hint:'Summe aller Würfel'}
+      ]
+    },
+    extrem: {
+      label:'Kniffel Extreme', family:'kniffel', theme:'extrem', turnMode:'sequential', diceCount:6, tileFam:'kniffel-fam',
+      bonusThreshold:70, bonusValue:45, kniffelBonusPerExtra:0, upper:UPPER_DEF,
+      lower:[
+        {key:'dreierpasch', label:'Dreierpasch', type:'number', hint:'Alle Augen, mind. 3 gleiche'},
+        {key:'viererpasch', label:'Viererpasch', type:'number', hint:'Alle Augen, mind. 4 gleiche'},
+        {key:'zweipaare', label:'Zwei Paare', type:'number', hint:'Alle Augen'},
+        {key:'dreipaare', label:'Drei Paare', type:'fixed', value:35, hint:'Drei verschiedene Paare'},
+        {key:'zweidreier', label:'Zwei Dreier', type:'fixed', value:45, hint:'Zwei verschiedene Dreierpasche'},
+        {key:'fullhouse', label:'Full House', type:'fixed', value:25, hint:'3 Gleiche + 2 Gleiche'},
+        {key:'fullhousegross', label:'Full House groß', type:'fixed', value:45, hint:'4 Gleiche + 2 Gleiche'},
+        {key:'kleinestrasse', label:'Kleine Straße', type:'fixed', value:30, hint:'4 Zahlen in Folge'},
+        {key:'grossestrasse', label:'Große Straße', type:'fixed', value:40, hint:'5 Zahlen in Folge'},
+        {key:'highway', label:'Highway', type:'fixed', value:50, hint:'6 Zahlen in Folge'},
+        {key:'fuenfgleiche', label:'5 Gleiche', type:'fixed', value:50, hint:'5 gleiche Würfel'},
+        {key:'sechsgleiche', label:'6 Gleiche', type:'fixed', value:75, hint:'6 gleiche Würfel'},
+        {key:'zehnoderweniger', label:'10 oder weniger', type:'fixed', value:40, hint:'Augensumme ≤ 10'},
+        {key:'dreiunddreissigodermehr', label:'33 oder mehr', type:'fixed', value:40, hint:'Augensumme ≥ 33'},
+        {key:'chance', label:'Chance', type:'number', hint:'Alle Augen'},
+        {key:'superchance', label:'Super Chance', type:'number', hint:'Alle Augen × 2 (verdoppelten Wert eintragen)'}
+      ]
+    },
+    qwixx: {
+      label:'Qwixx', family:'qwixx', theme:'qwixx', turnMode:'roundrobin', diceCount:6, tileFam:'qwixx-fam',
+      rows:[
+        {key:'red', label:'Rot', color:'#C7342E', dir:'asc'},
+        {key:'yellow', label:'Gelb', color:'#E0A822', dir:'asc'},
+        {key:'green', label:'Grün', color:'#3E8F4C', dir:'desc'},
+        {key:'blue', label:'Blau', color:'#2E6FB0', dir:'desc'}
+      ],
+      table:[1,3,6,10,15,21,28,36,45,55,66,78], penaltyValue:5, penaltyMax:4
+    },
+    // Own layout ('gsc'): mirrors the paper pad. Bonus indexes are 0-based cell positions.
+    gsc: {
+      label:'Ganz schön clever', family:'clever', layout:'gsc', theme:'gsc', turnMode:'roundrobin', diceCount:6, tileFam:'clever-fam gsc',
+      sections:[
+        {key:'gelb', label:'Gelb', color:'#F2C230'},
+        {key:'blau', label:'Blau', color:'#3B8FE0'},
+        {key:'gruen', label:'Grün', color:'#45B65A'},
+        {key:'orange', label:'Orange', color:'#F0892E'},
+        {key:'lila', label:'Lila', color:'#A96BD8'}
+      ],
+      rounds:[{kind:'reroll'},{kind:'plus'},{kind:'reroll'},{kind:'any'},null,null],
+      yellow:{ rows:[[3,6,5,'X'],[2,1,'X',5],[1,'X',2,4],['X',3,4,6]], colPoints:[10,14,16,20],
+        rowBonus:[{kind:'ask',target:'blau'},{kind:'write',target:'orange',value:4},{kind:'ask',target:'gruen'},{kind:'fox'}], diagBonus:{kind:'plus'} },
+      blue:{ rows:[[null,2,3,4],[5,6,7,8],[9,10,11,12]], table:[1,2,4,7,11,16,22,29,37,46,56],
+        rowBonus:[{kind:'write',target:'orange',value:5},{kind:'ask',target:'gelb'},{kind:'fox'}],
+        colBonus:[{kind:'reroll'},{kind:'ask',target:'gruen'},{kind:'write',target:'lila',value:6},{kind:'plus'}] },
+      green:{ req:[1,2,3,4,5,1,2,3,4,5,6], table:[1,3,6,10,15,21,28,36,45,55,66],
+        bonus:{3:{kind:'plus'}, 5:{kind:'ask',target:'blau'}, 6:{kind:'fox'}, 8:{kind:'write',target:'lila',value:6}, 9:{kind:'reroll'}} },
+      orange:{ mult:[1,1,1,2,1,1,2,1,2,1,3],
+        bonus:{2:{kind:'reroll'}, 4:{kind:'ask',target:'gelb'}, 5:{kind:'plus'}, 7:{kind:'fox'}, 9:{kind:'write',target:'lila',value:6}} },
+      lila:{
+        bonus:{2:{kind:'reroll'}, 3:{kind:'ask',target:'blau'}, 4:{kind:'plus'}, 5:{kind:'ask',target:'gelb'}, 6:{kind:'fox'}, 7:{kind:'reroll'}, 8:{kind:'ask',target:'gruen'}, 9:{kind:'write',target:'orange',value:6}, 10:{kind:'plus'}} }
+    },
+    doppelt: {
+      label:'Doppelt so clever', family:'clever', theme:'doppelt', turnMode:'roundrobin', diceCount:6, tileFam:'clever-fam doppelt',
+      trackers:[{key:'reroll', icon:'reroll', label:'Nochmal würfeln'}, {key:'ruckhol', icon:'retrieve', label:'Rückhol-Aktion'}, {key:'action', icon:'plus', label:'Zusatzwürfel'}],
+      sections:[
+        {key:'silber', label:'Silber', color:'#8D97A0', type:'grid', rows:[[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6]], rowLabels:['Gelb','Blau','Grün','Rosa'], gridScoring:{mode:'rowtable', table:[2,4,7,11,16,22]},
+          colBonuses:[{kind:'action',label:'+1'},{kind:'ask',target:'gelb'},{kind:'fox'},{kind:'ask',target:'blau'},{kind:'ask',target:'gruen'},{kind:'ask',target:'rosa'}]},
+        {key:'gelb', label:'Gelb', color:'#E0A822', type:'network', nodes:[3,6,1,2,4,3,2,5,5,4], table:[3,10,21,36,55,75,96,118,141,165],
+          legend:[{kind:'reroll'},{kind:'action',label:'Rückhol'},{kind:'ask',target:'blau'},{kind:'ask',target:'gruen'},{kind:'ask',target:'rosa'},{kind:'fox'}], legendNote:'Position laut Originalblatt nicht 100% gesichert — Foto hilft beim Nachjustieren.'},
+        {key:'blau', label:'Blau', color:'#2E6FB0', type:'scale', displayValues:true, values:[2,3,4,5,6,7,8,9,10,11,12], table:[1,3,6,10,15,21,28,36,45,55,66],
+          cellBonuses:{2:{kind:'action',label:'Rückhol'}, 3:{kind:'ask',target:'gelb'}, 8:{kind:'action',label:'+1'}, 9:{kind:'reroll'}, 10:{kind:'ask',target:'rosa'}}},
+        {key:'gruen', label:'Grün', color:'#3E8F4C', type:'pairsub', count:6, hints:['×2 / ×2','×2 / ×1','×3 / ×3','×3 / ×2','×3 / ×1','×4 / ×1'],
+          legend:[{kind:'reroll'},{kind:'ask',target:'blau'},{kind:'action',label:'Rückhol'},{kind:'fox'},{kind:'ask',target:'silber'},{kind:'action',label:'+1'},{kind:'ask',target:'rosa'},{kind:'ask',target:'gelb'}], legendNote:'Position laut Originalblatt nicht 100% gesichert — Foto hilft beim Nachjustieren.'},
+        {key:'rosa', label:'Rosa', color:'#D06E96', type:'sum', count:12, hints:[],
+          legend:[{kind:'reroll'},{kind:'action',label:'Rückhol'},{kind:'action',label:'+1'},{kind:'ask',target:'gruen'},{kind:'ask',target:'gelb'},{kind:'fox'},{kind:'ask',target:'silber'},{kind:'reroll'},{kind:'ask',target:'blau'},{kind:'ask',target:'gelb'}], legendNote:'Position laut Originalblatt nicht 100% gesichert — Foto hilft beim Nachjustieren.'}
+      ]
+    },
+    dreimal: {
+      label:'Dreimal so clever', family:'clever', theme:'dreimal', turnMode:'roundrobin', diceCount:6, tileFam:'clever-fam dreimal',
+      trackers:[{key:'reroll', icon:'reroll', label:'Nochmal würfeln'}, {key:'joker', icon:'swap', label:'Zahlen-Joker'}, {key:'action', icon:'plus', label:'Zusatzwürfel'}],
+      sections:[
+        {key:'gelb', label:'Gelb', color:'#E0A822', type:'grid', rows:[[1,'X',3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6]], rowLabels:['I','II','III'], gridScoring:{mode:'rowtable', table:[2,6,12,20,30,42]},
+          legend:[{kind:'reroll'},{kind:'action',label:'Joker'},{kind:'ask',target:'rosa'},{kind:'action',label:'+1'},{kind:'ask',target:'tuerkis'},{kind:'fox'}], legendNote:'Position laut Originalblatt nicht 100% gesichert — Foto hilft beim Nachjustieren.'},
+        {key:'tuerkis', label:'Türkis', color:'#2BA89E', type:'grid', rows:[[1,2,'X',4,5,6],[1,2,3,4,5,6],[1,2,'X',4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6]], gridScoring:{mode:'rowtable', table:[1,3,6,10,15,21]},
+          rowBonuses:[{kind:'fox'},{kind:'action',label:'+1'},{kind:'ask',target:'braun'},{kind:'ask',target:'tuerkis'},null]},
+        {key:'blau', label:'Blau', color:'#2E6FB0', type:'numberline',
+          legend:[{kind:'reroll'},{kind:'ask',target:'rosa'},{kind:'ask',target:'gelb'},{kind:'action',label:'Joker'},{kind:'fox'},{kind:'ask',target:'tuerkis'}], legendNote:'Position laut Originalblatt nicht 100% gesichert — Foto hilft beim Nachjustieren.'},
+        {key:'braun', label:'Braun', color:'#9A7034', type:'scale', displayValues:true, values:[1,'X','X',4,2,'X',4,5,2,1,6,3], table:[2,5,9,14,20,27,35,44,54,65,77,90],
+          legend:[{kind:'action',label:'Joker'},{kind:'ask',target:'rosa'},{kind:'ask',target:'tuerkis'},{kind:'action',label:'+1'},{kind:'ask',target:'gelb'},{kind:'fox'}], legendNote:'Position laut Originalblatt nicht 100% gesichert — Foto hilft beim Nachjustieren.'},
+        {key:'rosa', label:'Rosa', color:'#D06E96', type:'sum', count:11, hints:['halb','×2','×2','×1','×2','×2','×1','×3','×2','×2','×3'],
+          legend:[{kind:'reroll'},{kind:'action',label:'Joker'},{kind:'action',label:'+1'},{kind:'ask',target:'gelb'},{kind:'ask',target:'braun'},{kind:'fox'},{kind:'ask',target:'tuerkis'}], legendNote:'Position laut Originalblatt nicht 100% gesichert — Foto hilft beim Nachjustieren.'}
+      ]
+    }
+  };
+  var GAME_ORDER = ['kniffel','extrem','gsc','doppelt','dreimal','qwixx'];
+
+  // ===================================================================
+  // STATE
+  // ===================================================================
+  var state = { phase:'picker', game:null, players:[], activePlayerIndex:0, setupNames:['',''] };
+
+  function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+  function load(){
+    try{ var raw = localStorage.getItem(STORE_KEY); if(raw){ var p = JSON.parse(raw); if(p) state = p; } }catch(e){}
+  }
+
+  function blankSection(sec){
+    switch(sec.type){
+      case 'grid': return { cells: sec.rows.map(function(r){ return r.map(function(){ return false; }); }) };
+      case 'scale': return { crossed: sec.values.map(function(){ return false; }) };
+      case 'sum': return { values: new Array(sec.count).fill(null) };
+      case 'pairsub': return { pairs: new Array(sec.count).fill(null).map(function(){ return [null,null]; }) };
+      case 'network': return { state: sec.nodes.map(function(){ return 0; }) };
+      case 'numberline': var v = new Array(13).fill(null); v[6] = 7; return { values:v };
+    }
+  }
+
+  function freshScoresFor(gameKey){
+    var def = GAMES[gameKey];
+    if(def.layout === 'gsc'){
+      return { v:2, yellow: def.yellow.rows.map(function(r){ return r.map(function(v){ return v==='X'; }); }),
+        blue:new Array(11).fill(false), green:new Array(11).fill(false),
+        orange:new Array(11).fill(null), lila:new Array(11).fill(null), used:{ reroll:0, plus:0 } };
+    }
+    if(def.family === 'kniffel') return { upper:{}, lower:{}, kniffelBonusCount:0 };
+    if(def.family === 'qwixx'){
+      var rows = {}; def.rows.forEach(function(r){ rows[r.key] = { crossed:new Array(11).fill(false), locked:false }; });
+      return { rows:rows, penalty:0 };
+    }
+    if(def.family === 'clever'){
+      var sections = {}; def.sections.forEach(function(sec){ sections[sec.key] = blankSection(sec); });
+      var trackers = {}; (def.trackers||[]).forEach(function(t){ trackers[t.key] = new Array(6).fill(false); });
+      return { sections:sections, fox:0, trackers:trackers };
+    }
+  }
+  function freshPlayer(name, gameKey){ return { name:name, scores: freshScoresFor(gameKey) }; }
+
+  // ---------- Scoring ----------
+  function computeKniffelTotals(player, gameKey){
+    var def = GAMES[gameKey], sc = player.scores, upperSum = 0;
+    def.upper.forEach(function(c){ var v = sc.upper[c.key]; if(typeof v==='number') upperSum += v; });
+    var bonus = upperSum >= def.bonusThreshold ? def.bonusValue : 0;
+    var upperTotal = upperSum + bonus, lowerSum = 0;
+    def.lower.forEach(function(c){ var v = sc.lower[c.key]; if(typeof v==='number') lowerSum += v; });
+    var kniffelBonus = (sc.kniffelBonusCount||0) * def.kniffelBonusPerExtra;
+    lowerSum += kniffelBonus;
+    return { upperSum:upperSum, bonus:bonus, upperTotal:upperTotal, lowerSum:lowerSum, kniffelBonus:kniffelBonus, grand:upperTotal+lowerSum };
+  }
+
+  function computeQwixxTotals(player){
+    var def = GAMES.qwixx, sc = player.scores, rowScores = {}, sum = 0;
+    def.rows.forEach(function(r){
+      var rd = sc.rows[r.key], cnt = rd.crossed.filter(Boolean).length + (rd.locked ? 1 : 0);
+      var s = cnt > 0 ? (def.table[cnt-1]||def.table[def.table.length-1]) : 0;
+      rowScores[r.key] = s; sum += s;
+    });
+    var penaltyScore = (sc.penalty||0) * def.penaltyValue;
+    return { rowScores:rowScores, penaltyScore:penaltyScore, grand: sum - penaltyScore };
+  }
+
+  function scoreSection(sec, data){
+    switch(sec.type){
+      case 'grid':
+        if(sec.gridScoring.mode === 'columnvalues'){
+          var total = 0, cols = sec.rows[0].length;
+          for(var c=0;c<cols;c++){ var allOn = true; for(var r=0;r<sec.rows.length;r++){ if(!data.cells[r][c]) allOn=false; } if(allOn) total += sec.gridScoring.values[c]; }
+          return total;
+        } else {
+          var t = 0;
+          sec.rows.forEach(function(row,r){ var cnt = data.cells[r].filter(Boolean).length; if(cnt>0) t += sec.gridScoring.table[cnt-1]; });
+          return t;
+        }
+      case 'scale': { var cnt = data.crossed.filter(Boolean).length; return cnt>0 ? sec.table[cnt-1] : 0; }
+      case 'sum': return data.values.reduce(function(a,v){ return a + (typeof v==='number'?v:0); }, 0);
+      case 'pairsub': return data.pairs.reduce(function(a,p){ return a + ((typeof p[0]==='number'?p[0]:0) - (typeof p[1]==='number'?p[1]:0)); }, 0);
+      case 'network': { var cnt2 = data.state.filter(function(s){ return s===2; }).length; return cnt2>0 ? sec.table[cnt2-1] : 0; }
+      case 'numberline': {
+        var STARS = [22,17,13,9,6,3,0,3,6,9,13,17,22];
+        var filled = []; data.values.forEach(function(v,i){ if(typeof v==='number') filled.push(i); });
+        if(!filled.length) return 0;
+        var minI = Math.min.apply(null,filled), maxI = Math.max.apply(null,filled);
+        var bonus = 0;
+        data.values.forEach(function(v,i){ if(i===6) return; if(typeof v==='number' && (v<=4 || v>=10)) bonus += 4; });
+        return STARS[minI] + STARS[maxI] + bonus;
+      }
+    }
+    return 0;
+  }
+
+  function computeCleverTotals(player, gameKey){
+    var def = GAMES[gameKey], sc = player.scores, breakdown = {};
+    def.sections.forEach(function(sec){ breakdown[sec.key] = scoreSection(sec, sc.sections[sec.key]); });
+    var nonFox = def.sections.map(function(sec){ return breakdown[sec.key]; });
+    var hasZero = nonFox.some(function(v){ return v===0; });
+    var foxCount = sc.fox||0;
+    var foxScore = (foxCount>0 && !hasZero) ? foxCount * Math.min.apply(null,nonFox) : 0;
+    var sum = nonFox.reduce(function(a,b){ return a+b; }, 0);
+    return { breakdown:breakdown, foxScore:foxScore, grand: sum + foxScore };
+  }
+
+  // ---------- Ganz schön clever (pad layout) ----------
+  function gscMaxRounds(){ var n = state.players.length; return n<=2 ? 6 : (n===3 ? 5 : 4); }
+
+  // every bonus the player has unlocked so far, with a stable id per printed bonus spot
+  function gscBonuses(def, sc){
+    var out = [], round = state.gscRound || 1;
+    function add(id, spec){ if(spec) out.push({ id:id, spec:spec }); }
+    def.rounds.forEach(function(spec, i){ if(i < round) add('r'+i, spec); });
+    var Y = def.yellow;
+    sc.yellow.forEach(function(row, r){ if(row.every(Boolean)) add('yr'+r, Y.rowBonus[r]); });
+    if(sc.yellow.every(function(row, i){ return row[i]; })) add('yd', Y.diagBonus);
+    var B = def.blue;
+    function blueOn(v){ return v===null || sc.blue[v-2]; }
+    B.rows.forEach(function(row, r){ if(row.every(blueOn)) add('br'+r, B.rowBonus[r]); });
+    B.rows[0].forEach(function(_, c){ if(B.rows.every(function(row){ return blueOn(row[c]); })) add('bc'+c, B.colBonus[c]); });
+    var gCount = sc.green.filter(Boolean).length;
+    Object.keys(def.green.bonus).forEach(function(i){ if(gCount > +i) add('g'+i, def.green.bonus[i]); });
+    ['orange','lila'].forEach(function(k){
+      var filled = sc[k].filter(function(v){ return v!==null; }).length;
+      Object.keys(def[k].bonus).forEach(function(i){ if(filled > +i) add(k.charAt(0)+i, def[k].bonus[i]); });
+    });
+    return out;
+  }
+
+  function computeGscTotals(player){
+    var def = GAMES.gsc, sc = player.scores;
+    var blueCount = sc.blue.filter(Boolean).length, greenCount = sc.green.filter(Boolean).length;
+    var parts = {
+      gelb: def.yellow.colPoints.reduce(function(a, p, c){ return a + (sc.yellow.every(function(row){ return row[c]; }) ? p : 0); }, 0),
+      blau: blueCount ? def.blue.table[blueCount-1] : 0,
+      gruen: greenCount ? def.green.table[greenCount-1] : 0,
+      orange: sc.orange.reduce(function(a, v, i){ return a + (v===null ? 0 : v*def.orange.mult[i]); }, 0),
+      lila: sc.lila.reduce(function(a, v){ return a + (v===null ? 0 : v); }, 0)
+    };
+    var bonuses = gscBonuses(def, sc);
+    function countKind(k){ return bonuses.filter(function(b){ return b.spec.kind===k; }).length; }
+    var vals = def.sections.map(function(s){ return parts[s.key]; });
+    var foxMin = Math.min.apply(null, vals), fox = countKind('fox');
+    var foxScore = fox * foxMin;
+    return { parts:parts, blueCount:blueCount, greenCount:greenCount, bonuses:bonuses, fox:fox, foxMin:foxMin, foxScore:foxScore,
+      earned:{ reroll:countKind('reroll'), plus:countKind('plus') },
+      grand: vals.reduce(function(a, b){ return a+b; }, 0) + foxScore };
+  }
+
+  function getGrandTotal(player, gameKey){
+    if(GAMES[gameKey].layout==='gsc') return computeGscTotals(player).grand;
+    var fam = GAMES[gameKey].family;
+    if(fam==='kniffel') return computeKniffelTotals(player, gameKey).grand;
+    if(fam==='qwixx') return computeQwixxTotals(player).grand;
+    if(fam==='clever') return computeCleverTotals(player, gameKey).grand;
+    return 0;
+  }
+
+  // ===================================================================
+  // DOM refs
+  // ===================================================================
+  var brandName = document.getElementById('brandName');
+  var backBtn = document.getElementById('backBtn');
+  var playerTabsEl = document.getElementById('playerTabs');
+  var pickerView = document.getElementById('pickerView');
+  var tileGrid = document.getElementById('tileGrid');
+  var setupView = document.getElementById('setupView');
+  var setupTitle = document.getElementById('setupTitle');
+  var sheetView = document.getElementById('sheetView');
+  var bottomBar = document.getElementById('bottomBar');
+  var bbActions = document.getElementById('bbActions');
+  var playerRowsEl = document.getElementById('playerRows');
+  var addPlayerBtn = document.getElementById('addPlayerBtn');
+  var startBtn = document.getElementById('startBtn');
+  var rulesetNote = document.getElementById('rulesetNote');
+  var bbTotal = document.getElementById('bbTotal');
+  var overlay = document.getElementById('overlay');
+  var rankList = document.getElementById('rankList');
+  var closeOverlay = document.getElementById('closeOverlay');
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+
+  function showToast(msg, ms){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, ms || 1500);
+  }
+
+  // ---------- die-value picker (Orange / Lila) ----------
+  var dieOverlay = document.getElementById('dieOverlay');
+  var dieTitle = document.getElementById('dieTitle');
+  var dieHint = document.getElementById('dieHint');
+  var dieGrid = document.getElementById('dieGrid');
+  var dieClear = document.getElementById('dieClear');
+  var diePick = null;
+  function closeDiePicker(){ dieOverlay.classList.remove('open'); }
+  function openDiePicker(title, hint, allowed, canClear, onPick){
+    dieTitle.textContent = title; dieHint.textContent = hint || '';
+    dieGrid.innerHTML = '';
+    for(var v=1; v<=6; v++){
+      (function(v){
+        var b = document.createElement('button'); b.innerHTML = pipSVG(v, 30); b.setAttribute('aria-label', String(v));
+        b.disabled = !allowed(v);
+        b.addEventListener('click', function(){ closeDiePicker(); onPick(v); });
+        dieGrid.appendChild(b);
+      })(v);
+    }
+    dieClear.classList.toggle('hidden', !canClear);
+    diePick = onPick;
+    dieOverlay.classList.add('open');
+  }
+  dieClear.addEventListener('click', function(){ closeDiePicker(); if(diePick) diePick(null); });
+  document.getElementById('dieCancel').addEventListener('click', closeDiePicker);
+  dieOverlay.addEventListener('click', function(e){ if(e.target===dieOverlay) closeDiePicker(); });
+
+  function applyTheme(){
+    document.body.className = state.game ? ('theme-' + GAMES[state.game].theme) : '';
+  }
+
+  // ---------- Picker ----------
+  function renderPicker(){
+    tileGrid.innerHTML = '';
+    GAME_ORDER.forEach(function(key){
+      var def = GAMES[key];
+      var tile = document.createElement('button');
+      tile.className = 'tile ' + def.tileFam;
+      var icon = '';
+      if(def.family==='kniffel') icon = pipSVG(def.diceCount===6?6:5, 20, '#FBF6EF');
+      else if(def.family==='qwixx') icon = '<div class="tdots">' + def.rows.map(function(r){ return '<span style="background:'+r.color+'"></span>'; }).join('') + '</div>';
+      else if(def.family==='clever') icon = '<div class="tdots">' + def.sections.slice(0,5).map(function(s){ return '<span style="background:'+s.color+'"></span>'; }).join('') + '</div>';
+      tile.innerHTML = '<div class="tname">'+escapeHtml(def.label)+'</div>' +
+        '<div class="tsub">'+def.diceCount+' Würfel</div>' + icon;
+      tile.addEventListener('click', function(){
+        state.game = key;
+        state.phase = 'setup';
+        save();
+        renderAll();
+      });
+      tileGrid.appendChild(tile);
+    });
+  }
+
+  // ---------- Setup ----------
+  var RULESET_NOTES = {
+    kniffel: '<b>Kniffel</b> &ndash; 5 Würfel, Bonus ab 63 (+35).',
+    extrem: '<b>Kniffel Extreme</b> &ndash; 6 Würfel, 16 Kategorien unten, Bonus ab 70 (+45).',
+    qwixx: '<b>Qwixx</b> &ndash; 4 Reihen ankreuzen, ab 5 Kreuzen sperrbar. Fehlwurf = -5.',
+    gsc: '<b>Ganz schön clever</b> &ndash; Aufbau wie der Originalblock. Erreichte Boni leuchten auf, Füchse, Neuwürfe und +1-Aktionen zählt die App mit. Fuchs = Anzahl × schwächster Bereich.',
+    doppelt: '<b>Doppelt so clever</b> &ndash; Silber, Gelb-Netz, Blau, Grün (Minus-Paare), Rosa + Füchse.',
+    dreimal: '<b>Dreimal so clever</b> &ndash; Gelb, Türkis, Blau-Zahlenstrahl, Braun, Rosa + Füchse.'
+  };
+
+  function renderSetupRows(){
+    playerRowsEl.innerHTML = '';
+    state.setupNames.forEach(function(name, i){
+      var row = document.createElement('div'); row.className = 'player-row';
+      var input = document.createElement('input');
+      input.type = 'text'; input.placeholder = 'Spieler ' + (i+1); input.value = name;
+      input.addEventListener('input', function(){ state.setupNames[i] = input.value; updateStartBtn(); });
+      row.appendChild(input);
+      if(state.setupNames.length > 1){
+        var rm = document.createElement('button');
+        rm.className = 'icon-btn'; rm.setAttribute('aria-label','Spieler entfernen'); rm.textContent = '×';
+        rm.addEventListener('click', function(){ state.setupNames.splice(i,1); renderSetupRows(); });
+        row.appendChild(rm);
+      }
+      playerRowsEl.appendChild(row);
+    });
+  }
+  function updateStartBtn(){
+    startBtn.disabled = !state.setupNames.some(function(n){ return n.trim().length>0; });
+  }
+  addPlayerBtn.addEventListener('click', function(){
+    if(state.setupNames.length>=8) return;
+    state.setupNames.push(''); renderSetupRows(); updateStartBtn();
+  });
+  startBtn.addEventListener('click', function(){
+    var names = state.setupNames.map(function(n,i){ var t=n.trim(); return t.length?t:('Spieler '+(i+1)); });
+    state.players = names.map(function(n){ return freshPlayer(n, state.game); });
+    state.activePlayerIndex = 0;
+    state.gscRound = 1;
+    state.phase = 'game';
+    save(); renderAll();
+  });
+  backBtn.addEventListener('click', function(){
+    state.phase = 'picker'; state.game = null; save(); renderAll();
+  });
+
+  // ---------- Player tabs ----------
+  function renderPlayerTabs(){
+    playerTabsEl.innerHTML = '';
+    if(state.phase !== 'game'){ playerTabsEl.classList.add('hidden'); return; }
+    playerTabsEl.classList.remove('hidden');
+    var totals = state.players.map(function(p){ return getGrandTotal(p, state.game); });
+    var maxTotal = Math.max.apply(null, totals.concat([0]));
+    var leaderExists = state.players.length>1 && maxTotal>0;
+    state.players.forEach(function(p,i){
+      var tab = document.createElement('div');
+      tab.className = 'ptab' + (i===state.activePlayerIndex?' active':'') + (leaderExists && totals[i]===maxTotal?' leader':'');
+      tab.innerHTML = '<span>'+escapeHtml(p.name)+'</span><span class="tot">'+totals[i]+'</span>';
+      tab.addEventListener('click', function(){ state.activePlayerIndex = i; save(); renderAll(); });
+      playerTabsEl.appendChild(tab);
+    });
+  }
+
+  // ---------- Turn advance ----------
+  function isKniffelPlayerDone(player, gameKey){
+    var def = GAMES[gameKey], sc = player.scores;
+    return def.upper.every(function(c){ return sc.upper[c.key] !== undefined && sc.upper[c.key] !== null; }) &&
+           def.lower.every(function(c){ return sc.lower[c.key] !== undefined && sc.lower[c.key] !== null; });
+  }
+  function advanceSequential(){
+    if(state.players.length <= 1) return;
+    var n = state.players.length, start = state.activePlayerIndex;
+    for(var step=1; step<=n; step++){
+      var idx = (start+step) % n;
+      if(!isKniffelPlayerDone(state.players[idx], state.game)){
+        state.activePlayerIndex = idx;
+        showToast('Weiter: ' + state.players[idx].name);
+        return;
+      }
+    }
+  }
+  function advanceRoundRobin(){
+    if(state.players.length <= 1) return;
+    state.activePlayerIndex = (state.activePlayerIndex+1) % state.players.length;
+    var name = state.players[state.activePlayerIndex].name;
+    // Clever pad: wrapping back to the first player starts the next round
+    if(GAMES[state.game].layout==='gsc' && state.activePlayerIndex===0){
+      if((state.gscRound||1) < gscMaxRounds()){ state.gscRound = (state.gscRound||1) + 1; showToast('Runde ' + state.gscRound + ' · ' + name, 2200); }
+      else showToast('Letzte Runde gespielt – Übersicht ansehen', 2600);
+      return;
+    }
+    showToast('Weiter: ' + name);
+  }
+
+  // ===================================================================
+  // Kniffel-family sheet (existing design, themed + auto-advance)
+  // ===================================================================
+  function buildFixedRow(cat, sc, onChange){
+    var row = document.createElement('div'); row.className = 'row';
+    var current = sc.lower[cat.key];
+    row.innerHTML = '<div class="row-label"><div class="name">'+escapeHtml(cat.label)+'</div><div class="hint">'+escapeHtml(cat.hint)+'</div></div>';
+    var choice = document.createElement('div'); choice.className = 'fixed-choice';
+    var yes = document.createElement('button'); yes.className = 'yes'+(current===cat.value?' on':''); yes.textContent = cat.value;
+    yes.addEventListener('click', function(){
+      var wasEmpty = (current===null || current===undefined);
+      sc.lower[cat.key] = (current===cat.value) ? null : cat.value;
+      onChange(wasEmpty && sc.lower[cat.key]!==null);
+    });
+    var no = document.createElement('button'); no.className = 'no'+(current===0?' on':''); no.textContent = '0';
+    no.addEventListener('click', function(){
+      var wasEmpty = (current===null || current===undefined);
+      sc.lower[cat.key] = (current===0) ? null : 0;
+      onChange(wasEmpty && sc.lower[cat.key]!==null);
+    });
+    choice.appendChild(yes); choice.appendChild(no); row.appendChild(choice);
+    return row;
+  }
+  function buildNumberRow(cat, scGroup, onChange){
+    var row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<div class="row-label"><div class="name">'+escapeHtml(cat.label)+'</div><div class="hint">'+escapeHtml(cat.hint)+'</div></div>';
+    var input = document.createElement('input');
+    input.className = 'num-input'; input.type = 'number'; input.inputMode = 'numeric'; input.min = '0'; input.placeholder = '–';
+    var val = scGroup[cat.key]; input.value = (typeof val==='number') ? val : '';
+    input.addEventListener('change', function(){
+      var wasEmpty = (val===null || val===undefined);
+      if(input.value===''){ scGroup[cat.key] = null; } else { var n = Math.max(0, parseInt(input.value,10)||0); scGroup[cat.key] = n; input.value = n; }
+      onChange(wasEmpty && scGroup[cat.key]!==null);
+    });
+    row.appendChild(input); return row;
+  }
+  function buildUpperRow(cat, sc, onChange){
+    var row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<div class="row-label" style="display:flex;align-items:center;gap:10px;">' + pipSVG(cat.face,20,'var(--ink-soft)') +
+      '<div><div class="name">'+escapeHtml(cat.label)+'</div><div class="hint">'+escapeHtml(cat.hint)+'</div></div></div>';
+    var input = document.createElement('input');
+    input.className = 'num-input'; input.type = 'number'; input.inputMode = 'numeric'; input.min = '0'; input.placeholder = '–';
+    var val = sc.upper[cat.key]; input.value = (typeof val==='number') ? val : '';
+    input.addEventListener('change', function(){
+      var wasEmpty = (val===null || val===undefined);
+      if(input.value===''){ sc.upper[cat.key] = null; } else { var n = Math.max(0, parseInt(input.value,10)||0); sc.upper[cat.key] = n; input.value = n; }
+      onChange(wasEmpty && sc.upper[cat.key]!==null);
+    });
+    row.appendChild(input); return row;
+  }
+  function renderKniffelSheet(def, player, sc){
+    function onChange(justCompletedTurn){
+      if(justCompletedTurn) advanceSequential();
+      save();
+      renderAll(true);
+    }
+    var info = document.createElement('div'); info.className = 'info-line';
+    info.textContent = def.diceCount + ' Würfel · Bonus ab ' + def.bonusThreshold + ' (+' + def.bonusValue + ')';
+    sheetView.appendChild(info);
+
+    var upperLabel = document.createElement('div'); upperLabel.className = 'section-label'; upperLabel.textContent = 'Oben';
+    sheetView.appendChild(upperLabel);
+    var upperCard = document.createElement('div'); upperCard.className = 'card';
+    def.upper.forEach(function(cat){ upperCard.appendChild(buildUpperRow(cat, sc, onChange)); });
+    var totals = computeKniffelTotals(player, state.game);
+    var bonusRow = document.createElement('div'); bonusRow.className = 'bonus-row';
+    var remaining = Math.max(0, def.bonusThreshold - totals.upperSum);
+    bonusRow.innerHTML = totals.bonus>0
+      ? '<span>Bonus erreicht (ab '+def.bonusThreshold+')</span><span class="val">+'+def.bonusValue+'</span>'
+      : '<span>Noch '+remaining+' bis Bonus (ab '+def.bonusThreshold+')</span><span class="val">+0</span>';
+    upperCard.appendChild(bonusRow);
+    var upperSubtotal = document.createElement('div'); upperSubtotal.className = 'subtotal';
+    upperSubtotal.innerHTML = '<span>Zwischensumme oben</span><b>'+totals.upperTotal+'</b>';
+    upperCard.appendChild(upperSubtotal);
+    sheetView.appendChild(upperCard);
+
+    var lowerLabel = document.createElement('div'); lowerLabel.className = 'section-label'; lowerLabel.textContent = 'Unten';
+    sheetView.appendChild(lowerLabel);
+    var lowerCard = document.createElement('div'); lowerCard.className = 'card';
+    def.lower.forEach(function(cat){
+      if(cat.type==='fixed'){
+        lowerCard.appendChild(buildFixedRow(cat, sc, onChange));
+        if(cat.isKniffel && def.kniffelBonusPerExtra>0){
+          var kniffelScored = sc.lower[cat.key]===cat.value;
+          var kRow = document.createElement('div'); kRow.className = 'kbonus-row'+(kniffelScored?'':' disabled');
+          kRow.innerHTML = '<div class="row-label"><div class="name">Kniffel-Bonus</div><div class="hint">+'+def.kniffelBonusPerExtra+' pro weiterem Kniffel</div></div>';
+          var stepper = document.createElement('div'); stepper.className = 'stepper';
+          var minus = document.createElement('button'); minus.textContent = '–'; minus.disabled = !kniffelScored || !sc.kniffelBonusCount;
+          minus.addEventListener('click', function(){ sc.kniffelBonusCount = Math.max(0,(sc.kniffelBonusCount||0)-1); save(); renderAll(true); });
+          var count = document.createElement('span'); count.className = 'count'; count.textContent = sc.kniffelBonusCount||0;
+          var plus = document.createElement('button'); plus.textContent = '+'; plus.disabled = !kniffelScored;
+          plus.addEventListener('click', function(){ sc.kniffelBonusCount = (sc.kniffelBonusCount||0)+1; save(); renderAll(true); });
+          stepper.appendChild(minus); stepper.appendChild(count); stepper.appendChild(plus);
+          kRow.appendChild(stepper); lowerCard.appendChild(kRow);
+        }
+      } else {
+        lowerCard.appendChild(buildNumberRow(cat, sc.lower, onChange));
+      }
+    });
+    var lowerSubtotal = document.createElement('div'); lowerSubtotal.className = 'subtotal';
+    lowerSubtotal.innerHTML = '<span>Zwischensumme unten</span><b>'+totals.lowerSum+'</b>';
+    lowerCard.appendChild(lowerSubtotal);
+    sheetView.appendChild(lowerCard);
+
+    bbTotal.textContent = totals.grand;
+  }
+
+  // ===================================================================
+  // Qwixx sheet
+  // ===================================================================
+  function renderQwixxSheet(def, player, sc){
+    var info = document.createElement('div'); info.className = 'info-line';
+    info.textContent = '4 Reihen · ab 5 Kreuzen sperrbar · Fehlwurf = -' + def.penaltyValue;
+    sheetView.appendChild(info);
+
+    var card = document.createElement('div'); card.className = 'card';
+    def.rows.forEach(function(r){
+      var rd = sc.rows[r.key];
+      var values = r.dir==='asc'
+        ? [2,3,4,5,6,7,8,9,10,11,12]
+        : [12,11,10,9,8,7,6,5,4,3,2];
+      var rowEl = document.createElement('div'); rowEl.className = 'qrow';
+      var label = document.createElement('div'); label.className = 'qlabel'; label.style.background = r.color; label.textContent = r.label;
+      rowEl.appendChild(label);
+      var cellsWrap = document.createElement('div'); cellsWrap.className = 'qcells';
+      values.forEach(function(v, idx){
+        var btn = document.createElement('button'); btn.className = 'qcell'+(rd.crossed[idx]?' on':''); btn.textContent = v;
+        if(rd.crossed[idx]){ btn.style.background = r.color; btn.style.borderColor = r.color; }
+        btn.addEventListener('click', function(){
+          if(rd.crossed[idx]){ rd.crossed[idx] = false; }
+          else {
+            var maxIdx = -1; rd.crossed.forEach(function(c,i){ if(c) maxIdx = i; });
+            if(idx > maxIdx) rd.crossed[idx] = true; else { showToast('Erst die Zahlen links davon'); return; }
+          }
+          save(); renderAll(true);
+        });
+        cellsWrap.appendChild(btn);
+      });
+      rowEl.appendChild(cellsWrap);
+      var cnt = rd.crossed.filter(Boolean).length;
+      var lockBtn = document.createElement('button'); lockBtn.className = 'qlock'+(rd.locked?' on':'');
+      lockBtn.innerHTML = lockSVG(14, rd.locked ? '#fff' : 'var(--ink-soft)');
+      lockBtn.disabled = !rd.locked && cnt<5;
+      lockBtn.addEventListener('click', function(){ rd.locked = !rd.locked; save(); renderAll(true); });
+      rowEl.appendChild(lockBtn);
+      card.appendChild(rowEl);
+    });
+    sheetView.appendChild(card);
+
+    var penCard = document.createElement('div'); penCard.className = 'card';
+    var penRow = document.createElement('div'); penRow.className = 'qpenalty';
+    var penLabel = document.createElement('div'); penLabel.className = 'row-label';
+    penLabel.innerHTML = '<div class="name">Fehlwürfe</div><div class="hint">je -'+def.penaltyValue+' Punkte</div>';
+    penRow.appendChild(penLabel);
+    for(var i=0;i<def.penaltyMax;i++){
+      (function(i){
+        var box = document.createElement('button'); box.className = 'qpbox'+(i<(sc.penalty||0)?' on':''); box.textContent = '✕';
+        box.addEventListener('click', function(){ sc.penalty = (i<(sc.penalty||0)) ? i : i+1; save(); renderAll(true); });
+        penRow.appendChild(box);
+      })(i);
+    }
+    penCard.appendChild(penRow);
+    sheetView.appendChild(penCard);
+
+    var totals = computeQwixxTotals(player);
+    bbTotal.textContent = totals.grand;
+  }
+
+  // ===================================================================
+  // Clever-engine sheet (Ganz schön clever / Doppelt / Dreimal)
+  // ===================================================================
+  // small original glyphs (own line-icon style, not traced from any publisher artwork)
+  var ICON_SVG = {
+    reroll: '<svg viewBox="0 0 24 24" width="13" height="13"><path d="M20 11A8 8 0 1 0 18.5 16.2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M20 5v6h-6" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>',
+    retrieve: '<svg viewBox="0 0 24 24" width="13" height="13"><path d="M12 4v11M12 15l-4-4M12 15l4-4" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    swap: '<svg viewBox="0 0 24 24" width="13" height="13"><path d="M16 3l4 4-4 4M20 7H7M8 21l-4-4 4-4M4 17h13" stroke="currentColor" stroke-width="2.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    fox: '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M4 9l4-5 4 4 4-4 4 5-2 7a6 6 0 0 1-12 0L4 9z" fill="currentColor"/><circle cx="9.3" cy="12.6" r="1.1" fill="var(--bchip-bg,#A05B3A)"/><circle cx="14.7" cy="12.6" r="1.1" fill="var(--bchip-bg,#A05B3A)"/></svg>'
+  };
+  var ACTION_ICON = { '+1':'plus', 'Rückhol':'retrieve', 'Joker':'swap' };
+  function badgeChip(spec, def){
+    if(!spec) return null;
+    var el = document.createElement('span'); el.className = 'bchip bchip-'+spec.kind;
+    if(spec.kind==='ask' || spec.kind==='write'){
+      var target = def.sections.filter(function(s){ return s.key===spec.target; })[0];
+      var tColor = target ? target.color : '#999';
+      var tLabel = target ? target.label : spec.target;
+      el.style.background = tColor;
+      el.textContent = spec.kind==='write' ? ('+'+spec.value) : '?';
+      el.title = spec.kind==='write' ? ('Schreibe '+spec.value+' in '+tLabel) : ('Bonus: freie Eingabe in '+tLabel);
+    } else if(spec.kind==='action'){
+      el.innerHTML = ICON_SVG[ACTION_ICON[spec.label] || 'plus'];
+      el.title = spec.label || 'Sonderaktion';
+    } else if(spec.kind==='fox'){
+      el.style.setProperty('--bchip-bg', '#A05B3A');
+      el.innerHTML = ICON_SVG.fox;
+      el.title = 'Fuchs';
+    } else {
+      el.innerHTML = ICON_SVG.reroll;
+      el.title = 'Nochmal würfeln';
+    }
+    return el;
+  }
+  function renderLegend(sec, def, card){
+    if(!sec.legend) return;
+    var line = document.createElement('div'); line.className = 'legend-line';
+    var lbl = document.createElement('span'); lbl.textContent = 'Boni in dieser Reihe:'; line.appendChild(lbl);
+    sec.legend.forEach(function(spec){ var c = badgeChip(spec, def); if(c) line.appendChild(c); });
+    card.appendChild(line);
+    if(sec.legendNote){
+      var note = document.createElement('div'); note.className = 'legend-line'; note.style.paddingTop = '0';
+      note.textContent = sec.legendNote;
+      card.appendChild(note);
+    }
+  }
+
+  function renderSectionCard(sec, data, onChange, def){
+    var card = document.createElement('div'); card.className = 'card';
+    card.style.setProperty('--sec-color', sec.color);
+    var head = document.createElement('div'); head.className = 'sec-head'; head.style.background = sec.color;
+    var score = scoreSection(sec, data);
+    head.innerHTML = '<span>'+escapeHtml(sec.label)+'</span><span class="ssub">'+score+'</span>';
+    card.appendChild(head);
+
+    if(sec.type==='grid'){
+      var wrap = document.createElement('div'); wrap.className = 'grid-wrap';
+      sec.rows.forEach(function(row, r){
+        var rowEl = document.createElement('div'); rowEl.className = 'grid-row';
+        if(sec.rowLabels){ var rl = document.createElement('div'); rl.className='rlabel'; rl.textContent = sec.rowLabels[r]; rowEl.appendChild(rl); }
+        row.forEach(function(v, c){
+          var on = data.cells[r][c];
+          var btn = document.createElement('button'); btn.className = 'gcell xcell'+(on?' on':'')+(v==='X'?' wild':''); btn.textContent = v;
+          btn.addEventListener('click', function(){ data.cells[r][c] = !data.cells[r][c]; onChange(); });
+          rowEl.appendChild(btn);
+        });
+        if(sec.rowBonuses && sec.rowBonuses[r]){
+          var rb = document.createElement('span'); rb.className = 'grid-rowbonus';
+          var chip = badgeChip(sec.rowBonuses[r], def); if(chip) rb.appendChild(chip);
+          rowEl.appendChild(rb);
+        }
+        wrap.appendChild(rowEl);
+      });
+      card.appendChild(wrap);
+      if(sec.gridScoring.mode==='columnvalues' || sec.colBonuses){
+        var colvals = document.createElement('div'); colvals.className = 'grid-colvals';
+        if(sec.rowLabels){ var sp=document.createElement('span'); sp.style.width='2.8em'; sp.style.marginRight='2px'; colvals.appendChild(sp); }
+        var cols = sec.rows[0].length;
+        for(var c=0;c<cols;c++){
+          var cc = document.createElement('div'); cc.className = 'colcell';
+          if(sec.gridScoring.mode==='columnvalues'){ var s = document.createElement('span'); s.textContent = '+'+sec.gridScoring.values[c]; cc.appendChild(s); }
+          if(sec.colBonuses && sec.colBonuses[c]){ var chip2 = badgeChip(sec.colBonuses[c], def); if(chip2) cc.appendChild(chip2); }
+          colvals.appendChild(cc);
+        }
+        card.appendChild(colvals);
+      }
+      renderLegend(sec, def, card);
+    } else if(sec.type==='scale'){
+      var sw = document.createElement('div'); sw.className = 'cellstrip';
+      sec.values.forEach(function(v, i){
+        var cell = document.createElement('div'); cell.className = 'scell';
+        var mainText = sec.displayValues ? v : sec.table[i];
+        var subText = sec.displayValues ? sec.table[i] : v;
+        var b = document.createElement('button'); b.className = 'xcell'+(data.crossed[i]?' on':'');
+        b.textContent = mainText;
+        b.addEventListener('click', function(){ data.crossed[i] = !data.crossed[i]; onChange(); });
+        var lab = document.createElement('div'); lab.className = 'slabel'; lab.textContent = subText;
+        cell.appendChild(b); cell.appendChild(lab); sw.appendChild(cell);
+        if(sec.cellBonuses && sec.cellBonuses[i]){ var chip = badgeChip(sec.cellBonuses[i], def); if(chip) sw.appendChild(chip); }
+      });
+      card.appendChild(sw);
+      renderLegend(sec, def, card);
+    } else if(sec.type==='sum'){
+      var sumw = document.createElement('div'); sumw.className = 'cellstrip';
+      for(var i=0;i<sec.count;i++){
+        (function(i){
+          var cell = document.createElement('div'); cell.className = 'sumcell';
+          var input = document.createElement('input'); input.type='number'; input.inputMode='numeric'; input.min='0'; input.placeholder='–';
+          var val = data.values[i]; input.value = typeof val==='number' ? val : '';
+          input.addEventListener('change', function(){
+            if(input.value===''){ data.values[i] = null; } else { var n = Math.max(0, parseInt(input.value,10)||0); data.values[i]=n; input.value=n; }
+            onChange();
+          });
+          var hintTxt = (sec.hints && sec.hints[i]) ? sec.hints[i] : ' ';
+          var hint = document.createElement('div'); hint.className='shint'; hint.textContent = hintTxt;
+          cell.appendChild(input); cell.appendChild(hint); sumw.appendChild(cell);
+          if(sec.cellBonuses && sec.cellBonuses[i]){ var chip = badgeChip(sec.cellBonuses[i], def); if(chip) sumw.appendChild(chip); }
+        })(i);
+      }
+      card.appendChild(sumw);
+      renderLegend(sec, def, card);
+    } else if(sec.type==='pairsub'){
+      var pw = document.createElement('div'); pw.className = 'pairstrip';
+      for(var p=0;p<sec.count;p++){
+        (function(p){
+          var group = document.createElement('div'); group.className='pairgroup';
+          var hintTxt = (sec.hints && sec.hints[p]) ? sec.hints[p] : '';
+          var hint = document.createElement('div'); hint.className='phint'; hint.textContent = hintTxt;
+          var boxes = document.createElement('div'); boxes.className='pboxes';
+          var a = document.createElement('input'); a.type='number'; a.inputMode='numeric'; a.placeholder='–';
+          a.value = typeof data.pairs[p][0]==='number' ? data.pairs[p][0] : '';
+          a.addEventListener('change', function(){ data.pairs[p][0] = a.value===''?null:Math.max(0,parseInt(a.value,10)||0); onChange(); });
+          var minus = document.createElement('span'); minus.className='pminus'; minus.textContent='−';
+          var b = document.createElement('input'); b.type='number'; b.inputMode='numeric'; b.placeholder='–';
+          b.value = typeof data.pairs[p][1]==='number' ? data.pairs[p][1] : '';
+          b.addEventListener('change', function(){ data.pairs[p][1] = b.value===''?null:Math.max(0,parseInt(b.value,10)||0); onChange(); });
+          boxes.appendChild(a); boxes.appendChild(minus); boxes.appendChild(b);
+          group.appendChild(hint); group.appendChild(boxes); pw.appendChild(group);
+        })(p);
+      }
+      card.appendChild(pw);
+      renderLegend(sec, def, card);
+    } else if(sec.type==='network'){
+      var nw = document.createElement('div'); nw.className='net-wrap';
+      sec.nodes.forEach(function(v,i){
+        var st = data.state[i];
+        var cell = document.createElement('button');
+        cell.className = 'ncell' + (st===1?' circled':'') + (st===2?' crossed':'');
+        cell.textContent = v;
+        cell.addEventListener('click', function(){ data.state[i] = (st+1)%3; onChange(); });
+        nw.appendChild(cell);
+      });
+      card.appendChild(nw);
+      var legend2 = document.createElement('div'); legend2.className='legend-line';
+      legend2.textContent = 'Tippen: leer → eingekreist → gekreuzt. Nur Gekreuztes zählt.';
+      card.appendChild(legend2);
+      renderLegend(sec, def, card);
+    } else if(sec.type==='numberline'){
+      var nl = document.createElement('div'); nl.className='nline-wrap';
+      var STARS = [22,17,13,9,6,3,0,3,6,9,13,17,22];
+      for(var i=0;i<13;i++){
+        (function(i){
+          var cell = document.createElement('div'); cell.className='nline-cell';
+          var input = document.createElement('input'); input.type='number'; input.inputMode='numeric';
+          if(i===6){ input.value = 7; input.disabled = true; }
+          else {
+            var v = data.values[i]; input.value = typeof v==='number' ? v : '';
+            input.addEventListener('change', function(){ data.values[i] = input.value===''?null:(parseInt(input.value,10)||0); onChange(); });
+          }
+          var star = document.createElement('div'); star.className='star'; star.textContent = '★'+STARS[i];
+          cell.appendChild(input); cell.appendChild(star); nl.appendChild(cell);
+        })(i);
+      }
+      card.appendChild(nl);
+      renderLegend(sec, def, card);
+    }
+    return card;
+  }
+
+  function renderCleverSheet(def, player, sc){
+    function onChange(){ save(); renderAll(true); }
+    var info = document.createElement('div'); info.className = 'info-line';
+    info.textContent = def.diceCount + ' Würfel · Fuchs zählt wie dein schwächster Bereich';
+    sheetView.appendChild(info);
+    var key = document.createElement('div'); key.className = 'info-line';
+    key.style.marginTop = '-6px';
+    key.textContent = 'Symbole: Pfeil = nochmal würfeln · Kreis-Icons = Sonderaktion · farbiges ? = Bonus in der Farbe · Fuchs-Icon = Fuchs';
+    sheetView.appendChild(key);
+
+    if(def.trackers && def.trackers.length){
+      var trackCard = document.createElement('div'); trackCard.className = 'card';
+      var trackWrap = document.createElement('div'); trackWrap.className = 'tracker-wrap';
+      var dice = document.createElement('div'); dice.className = 'tracker-dice';
+      for(var f=1; f<=6; f++){
+        var td = document.createElement('div'); td.className = 'tdie'; td.innerHTML = pipSVG(f, 16, 'var(--ink-soft)');
+        dice.appendChild(td);
+      }
+      trackWrap.appendChild(dice);
+      def.trackers.forEach(function(t){
+        var row = document.createElement('div'); row.className = 'tracker-row';
+        var icon = document.createElement('div'); icon.className = 'tracker-icon'; icon.innerHTML = ICON_SVG[t.icon] || ''; icon.title = t.label;
+        row.appendChild(icon);
+        var pips = document.createElement('div'); pips.className = 'tracker-pips';
+        var arr = sc.trackers[t.key];
+        arr.forEach(function(on, i){
+          var p = document.createElement('button'); p.className = on ? 'on' : ''; p.title = t.label;
+          p.addEventListener('click', function(){ arr[i] = !arr[i]; onChange(); });
+          pips.appendChild(p);
+        });
+        row.appendChild(pips);
+        trackWrap.appendChild(row);
+      });
+      trackCard.appendChild(trackWrap);
+      sheetView.appendChild(trackCard);
+    }
+
+    def.sections.forEach(function(sec){
+      sheetView.appendChild(renderSectionCard(sec, sc.sections[sec.key], onChange, def));
+    });
+
+    var foxCard = document.createElement('div'); foxCard.className = 'card';
+    var foxRow = document.createElement('div'); foxRow.className = 'fox-row';
+    var label = document.createElement('div'); label.className = 'row-label';
+    label.innerHTML = '<div class="name">Füchse</div><div class="hint">zählt wie dein schwächster Bereich (0, falls ein Bereich 0 ist)</div>';
+    var stepper = document.createElement('div'); stepper.className = 'stepper';
+    var minus = document.createElement('button'); minus.textContent='–'; minus.disabled = !sc.fox;
+    minus.addEventListener('click', function(){ sc.fox = Math.max(0,(sc.fox||0)-1); onChange(); });
+    var count = document.createElement('span'); count.className='count'; count.textContent = sc.fox||0;
+    var plus = document.createElement('button'); plus.textContent='+';
+    plus.addEventListener('click', function(){ sc.fox = (sc.fox||0)+1; onChange(); });
+    stepper.appendChild(minus); stepper.appendChild(count); stepper.appendChild(plus);
+    foxRow.appendChild(label); foxRow.appendChild(stepper);
+    foxCard.appendChild(foxRow);
+    sheetView.appendChild(foxCard);
+
+    var totals = computeCleverTotals(player, state.game);
+    var sumCard = document.createElement('div'); sumCard.className = 'card';
+    var sub = document.createElement('div'); sub.className = 'subtotal';
+    sub.innerHTML = '<span>Fuchs-Punkte</span><b>'+totals.foxScore+'</b>';
+    sumCard.appendChild(sub);
+    sheetView.appendChild(sumCard);
+
+    bbTotal.textContent = totals.grand;
+  }
+
+  // ===================================================================
+  // Ganz schön clever sheet — same arrangement as the paper pad, own glyphs
+  // ===================================================================
+  var XPATH = '<path d="M5 5.5L19 18.5M18.5 5L5.5 19" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" fill="none"/>';
+  var XMARK = '<svg class="gx" viewBox="0 0 24 24" aria-hidden="true">' + XPATH + '</svg>';
+  var DUO_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="12" height="12" rx="2.5" fill="#3B8FE0" stroke="#F4F2EA" stroke-width="1"/><rect x="9.5" y="9.5" width="12" height="12" rx="2.5" fill="#F4F2EA"/></svg>';
+
+  function gscSection(def, key){ return def.sections.filter(function(s){ return s.key===key; })[0]; }
+  function gscBonusText(def, spec){
+    switch(spec.kind){
+      case 'reroll': return 'Neuwurf';
+      case 'plus': return '+1-Aktion';
+      case 'fox': return 'Fuchs';
+      case 'any': return 'Kreuz/Zahl in beliebiger Farbe';
+      case 'ask': return 'Kreuz in ' + gscSection(def, spec.target).label;
+      case 'write': return spec.value + ' in ' + gscSection(def, spec.target).label + ' eintragen';
+    }
+    return '';
+  }
+  function gscChip(def, spec, got){
+    var el = document.createElement('span'); el.className = 'gchip gchip-' + spec.kind + (got ? ' got' : '');
+    if(spec.kind==='ask'){ el.classList.add('sq'); el.style.background = gscSection(def, spec.target).color; el.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + XPATH + '</svg>'; }
+    else if(spec.kind==='write'){ el.classList.add('sq'); el.style.background = gscSection(def, spec.target).color; el.textContent = spec.value; }
+    else if(spec.kind==='any'){ el.classList.add('sq'); el.textContent = '?'; }
+    else if(spec.kind==='plus'){ el.textContent = '+1'; }
+    else if(spec.kind==='fox'){ el.style.setProperty('--bchip-bg', '#A05B3A'); el.innerHTML = ICON_SVG.fox; }
+    else { el.innerHTML = ICON_SVG.reroll; }
+    el.title = gscBonusText(def, spec) + (got ? ' (erreicht)' : '');
+    return el;
+  }
+
+  function renderGscSheet(def, player, sc){
+    var tot = computeGscTotals(player);
+    var gotIds = tot.bonuses.map(function(b){ return b.id; });
+    function got(id){ return gotIds.indexOf(id) >= 0; }
+    function slot(id, spec){
+      var s = document.createElement('div'); s.className = 'gsc-slot';
+      if(spec) s.appendChild(gscChip(def, spec, got(id)));
+      return s;
+    }
+    // apply a change, then announce any bonus it newly unlocked
+    function commit(fn){
+      fn();
+      var fresh = gscBonuses(def, sc).filter(function(b){ return gotIds.indexOf(b.id) < 0; });
+      if(fresh.length) showToast('Bonus: ' + fresh.map(function(b){ return gscBonusText(def, b.spec); }).join(' · '), 2600);
+      save(); renderAll();
+    }
+    function area(key, title, pts, rule){
+      var el = document.createElement('div'); el.className = 'gsc-area' + (key ? '' : ' neutral');
+      if(key) el.style.setProperty('--a', gscSection(def, key).color);
+      var head = document.createElement('div'); head.className = 'gsc-head';
+      head.innerHTML = '<span class="t">' + escapeHtml(title) + '</span>' + (rule ? '<span class="rule">' + escapeHtml(rule) + '</span>' : '') +
+        (pts !== null ? '<span class="pts">' + pts + '</span>' : '');
+      el.appendChild(head);
+      return el;
+    }
+    function cellBtn(text, on){
+      var b = document.createElement('button'); b.className = 'gsc-cell'; b.textContent = text;
+      if(on){ b.classList.add('on'); b.insertAdjacentHTML('beforeend', XMARK); }
+      return b;
+    }
+    function sub(text, hit){ var s = document.createElement('div'); s.className = 'gsc-sub' + (hit ? ' hit' : ''); s.textContent = text; return s; }
+
+    var board = document.createElement('div'); board.className = 'gsc-board';
+
+    // ---- top: round track, reroll / +1 tracks, symbol key ----
+    var round = state.gscRound || 1, maxR = gscMaxRounds();
+    var top = area(null, 'Runde ' + round + ' von ' + maxR, null, state.players.length + ' Spieler → ' + maxR + ' Runden');
+    var rounds = document.createElement('div'); rounds.className = 'gsc-rounds';
+    def.rounds.forEach(function(spec, i){
+      var col = document.createElement('div'); col.className = 'gsc-round';
+      var b = document.createElement('button'); b.textContent = i+1;
+      b.className = i+1 > maxR ? 'off' : (i+1===round ? 'cur' : (i+1 < round ? 'past' : ''));
+      b.addEventListener('click', function(){
+        if(i+1 > maxR){ showToast('Bei ' + state.players.length + ' Spielern nur ' + maxR + ' Runden'); return; }
+        commit(function(){ state.gscRound = i+1; });
+      });
+      col.appendChild(b); col.appendChild(slot('r'+i, spec));
+      rounds.appendChild(col);
+    });
+    top.appendChild(rounds);
+    [{k:'reroll', label:'Neuwurf'}, {k:'plus', label:'+1-Aktion'}].forEach(function(t){
+      var earned = tot.earned[t.k], used = Math.min(sc.used[t.k] || 0, earned);
+      var row = document.createElement('div'); row.className = 'gsc-trk';
+      var lbl = document.createElement('div'); lbl.className = 'lbl';
+      lbl.appendChild(gscChip(def, {kind:t.k}, true)); lbl.appendChild(document.createTextNode(t.label));
+      row.appendChild(lbl);
+      var slots = document.createElement('div'); slots.className = 'slots';
+      for(var i=0; i<Math.max(7, earned); i++){
+        (function(i){
+          var b = document.createElement('button');
+          b.className = i < used ? 'used' : (i < earned ? 'earned' : '');
+          if(i < used) b.innerHTML = XMARK;
+          b.setAttribute('aria-label', t.label + ' ' + (i+1));
+          b.addEventListener('click', function(){
+            if(i >= earned){ showToast('Noch nicht freigeschaltet'); return; }
+            commit(function(){ sc.used[t.k] = i < used ? i : i+1; });
+          });
+          slots.appendChild(b);
+        })(i);
+      }
+      row.appendChild(slots);
+      var cnt = document.createElement('span'); cnt.className = 'count'; cnt.textContent = (earned - used) + ' frei';
+      row.appendChild(cnt);
+      top.appendChild(row);
+    });
+    var legend = document.createElement('div'); legend.className = 'gsc-legend';
+    [[{kind:'ask', target:'blau'}, 'Kreuz in der Farbe'], [{kind:'write', target:'orange', value:4}, 'Zahl eintragen'],
+     [{kind:'reroll'}, 'Neuwurf'], [{kind:'plus'}, '+1-Aktion'], [{kind:'fox'}, 'Fuchs']].forEach(function(e){
+      var s = document.createElement('span'); s.appendChild(gscChip(def, e[0], true)); s.appendChild(document.createTextNode(e[1])); legend.appendChild(s);
+    });
+    top.appendChild(legend);
+    board.appendChild(top);
+
+    // ---- Gelb + Blau side by side, like on the pad ----
+    var duo = document.createElement('div'); duo.className = 'gsc-duo';
+
+    var Y = def.yellow;
+    var yArea = area('gelb', 'Gelb', tot.parts.gelb, null);
+    var yGrid = document.createElement('div'); yGrid.className = 'gsc-grid';
+    Y.rows.forEach(function(row, r){
+      row.forEach(function(v, c){
+        var on = sc.yellow[r][c];
+        var b = cellBtn(v==='X' ? '' : v, on);
+        if(v==='X'){ b.classList.add('pre'); b.disabled = true; b.title = 'Vorgedruckt'; }
+        else b.addEventListener('click', function(){ commit(function(){ sc.yellow[r][c] = !sc.yellow[r][c]; }); });
+        yGrid.appendChild(b);
+      });
+      yGrid.appendChild(slot('yr'+r, Y.rowBonus[r]));
+    });
+    Y.colPoints.forEach(function(p, c){
+      yGrid.appendChild(sub(p, sc.yellow.every(function(row){ return row[c]; })));
+    });
+    yGrid.appendChild(slot('yd', Y.diagBonus));
+    yArea.appendChild(yGrid);
+    duo.appendChild(yArea);
+
+    var B = def.blue;
+    var bArea = area('blau', 'Blau', tot.parts.blau, null);
+    var track = document.createElement('div'); track.className = 'gsc-track';
+    B.table.forEach(function(p, i){ track.appendChild(sub(p, i===tot.blueCount-1)); });
+    bArea.appendChild(track);
+    var bGrid = document.createElement('div'); bGrid.className = 'gsc-grid';
+    B.rows.forEach(function(row, r){
+      row.forEach(function(v){
+        if(v===null){
+          var d = document.createElement('div'); d.className = 'gsc-cell deco'; d.innerHTML = DUO_ICON;
+          d.title = 'Summe aus blauem und weißem Würfel'; bGrid.appendChild(d); return;
+        }
+        var b = cellBtn(v, sc.blue[v-2]);
+        b.addEventListener('click', function(){ commit(function(){ sc.blue[v-2] = !sc.blue[v-2]; }); });
+        bGrid.appendChild(b);
+      });
+      bGrid.appendChild(slot('br'+r, B.rowBonus[r]));
+    });
+    B.colBonus.forEach(function(spec, c){ bGrid.appendChild(slot('bc'+c, spec)); });
+    bArea.appendChild(bGrid);
+    duo.appendChild(bArea);
+    board.appendChild(duo);
+
+    // ---- Grün: cross left to right, each field needs at least the printed value ----
+    var G = def.green;
+    var gArea = area('gruen', 'Grün', tot.parts.gruen, 'von links, Würfel ≥ Feldwert');
+    var gStrip = document.createElement('div'); gStrip.className = 'gsc-strip';
+    G.req.forEach(function(req, i){
+      var col = document.createElement('div'); col.className = 'gsc-col';
+      var b = cellBtn('≥' + req, sc.green[i]);
+      if(i===tot.greenCount) b.classList.add('next');
+      b.addEventListener('click', function(){
+        if(i===tot.greenCount) commit(function(){ sc.green[i] = true; });
+        else if(i===tot.greenCount-1) commit(function(){ sc.green[i] = false; });
+        else showToast('Grün wird von links nach rechts angekreuzt');
+      });
+      col.appendChild(b); col.appendChild(sub(G.table[i], i===tot.greenCount-1)); col.appendChild(slot('g'+i, G.bonus[i]));
+      gStrip.appendChild(col);
+    });
+    gArea.appendChild(gStrip);
+    board.appendChild(gArea);
+
+    // ---- Orange / Lila: enter die values left to right via the picker ----
+    function valueStrip(key, title, rule, cfg){
+      var arr = sc[key], filled = arr.filter(function(v){ return v!==null; }).length;
+      var el = area(key, title, tot.parts[key], rule);
+      var strip = document.createElement('div'); strip.className = 'gsc-strip';
+      arr.forEach(function(v, i){
+        var mult = cfg.mult ? cfg.mult[i] : 1;
+        var col = document.createElement('div'); col.className = 'gsc-col';
+        var b = document.createElement('button'); b.className = 'gsc-cell' + (v===null ? ' empty' : '') + (i===filled ? ' next' : '');
+        b.textContent = v===null ? '' : v*mult;
+        b.addEventListener('click', function(){
+          if(i > filled){ showToast('Bitte der Reihe nach von links eintragen'); return; }
+          if(i < filled-1){ showToast('Nur das letzte Feld lässt sich ändern'); return; }
+          var prev = i > 0 ? arr[i-1] : null;
+          var strict = key==='lila' && prev!==null && prev!==6;
+          openDiePicker(title + ' · Feld ' + (i+1),
+            (mult > 1 ? 'Würfelwert wählen, zählt ×' + mult + '. ' : 'Würfelwert wählen. ') + (strict ? 'Muss größer als ' + prev + ' sein.' : ''),
+            function(d){ return !strict || d > prev; }, i===filled-1,
+            function(d){ commit(function(){ arr[i] = d; }); });
+        });
+        col.appendChild(b); col.appendChild(sub(mult > 1 ? '×' + mult : '', false)); col.appendChild(slot(key.charAt(0)+i, cfg.bonus[i]));
+        strip.appendChild(col);
+      });
+      el.appendChild(strip);
+      return el;
+    }
+    board.appendChild(valueStrip('orange', 'Orange', 'Würfelwert, ×2/×3 zählt doppelt/dreifach', def.orange));
+    board.appendChild(valueStrip('lila', 'Lila', 'jede Zahl größer als die davor, nach 6 frei', def.lila));
+
+    // ---- bottom summary, like the score row on the pad ----
+    var sumArea = area(null, 'Wertung', null, null);
+    var sum = document.createElement('div'); sum.className = 'gsc-sum';
+    def.sections.forEach(function(s, i){
+      if(i) sum.insertAdjacentHTML('beforeend', '<span class="op">+</span>');
+      var box = document.createElement('span'); box.className = 'box'; box.style.setProperty('--a', s.color); box.textContent = tot.parts[s.key]; box.title = s.label;
+      sum.appendChild(box);
+    });
+    sum.insertAdjacentHTML('beforeend', '<span class="op">+</span>');
+    var fox = document.createElement('span'); fox.className = 'fox';
+    fox.appendChild(gscChip(def, {kind:'fox'}, true));
+    fox.appendChild(document.createTextNode(tot.fox + '×' + tot.foxMin));
+    fox.title = 'Füchse × schwächster Bereich = ' + tot.foxScore;
+    sum.appendChild(fox);
+    sum.insertAdjacentHTML('beforeend', '<span class="op">=</span><span class="box total">' + tot.grand + '</span>');
+    sumArea.appendChild(sum);
+    board.appendChild(sumArea);
+
+    sheetView.appendChild(board);
+    bbTotal.textContent = tot.grand;
+  }
+
+  // ---------- dispatch ----------
+  function renderSheet(){
+    sheetView.innerHTML = '';
+    var def = GAMES[state.game], player = state.players[state.activePlayerIndex];
+    if(!player) return;
+    var sc = player.scores;
+    if(def.layout==='gsc') renderGscSheet(def, player, sc);
+    else if(def.family==='kniffel') renderKniffelSheet(def, player, sc);
+    else if(def.family==='qwixx') renderQwixxSheet(def, player, sc);
+    else if(def.family==='clever') renderCleverSheet(def, player, sc);
+  }
+
+  function renderRankList(){
+    var rows = state.players.map(function(p){ return { name:p.name, total:getGrandTotal(p, state.game) }; });
+    rows.sort(function(a,b){ return b.total - a.total; });
+    var maxTotal = rows.length ? rows[0].total : 0;
+    rankList.innerHTML = '';
+    rows.forEach(function(r,i){
+      var el = document.createElement('div');
+      el.className = 'rank-row' + (r.total===maxTotal && maxTotal>0 && rows.length>1 ? ' lead' : '');
+      el.innerHTML = '<span class="r">'+(i+1)+'.</span><span class="n">'+escapeHtml(r.name)+'</span><span class="t">'+r.total+'</span>';
+      rankList.appendChild(el);
+    });
+  }
+  closeOverlay.addEventListener('click', function(){ overlay.classList.remove('open'); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.classList.remove('open'); });
+
+  function goNewGame(){
+    if(!confirm('Neues Spiel starten? Die aktuellen Punktestände werden gelöscht.')) return;
+    state.setupNames = state.players.map(function(p){ return p.name; });
+    state.players = []; state.gscRound = 1; state.phase = 'setup'; save(); renderAll();
+  }
+
+  function renderBottomActions(){
+    bbActions.innerHTML = '';
+    if(GAMES[state.game].turnMode==='roundrobin' && state.players.length>1){
+      var nextIdx = (state.activePlayerIndex+1) % state.players.length;
+      var nextBtn = document.createElement('button'); nextBtn.className = 'next-btn';
+      nextBtn.textContent = 'Weiter → ' + state.players[nextIdx].name;
+      nextBtn.addEventListener('click', function(){ advanceRoundRobin(); save(); renderAll(); });
+      bbActions.appendChild(nextBtn);
+    }
+    var ov = document.createElement('button'); ov.className = 'ghost-btn'; ov.textContent = 'Übersicht';
+    ov.addEventListener('click', function(){ renderRankList(); overlay.classList.add('open'); });
+    bbActions.appendChild(ov);
+    var ng = document.createElement('button'); ng.className = 'ghost-btn'; ng.textContent = 'Neues Spiel';
+    ng.addEventListener('click', goNewGame);
+    bbActions.appendChild(ng);
+  }
+
+  // ===================================================================
+  // Master render
+  // ===================================================================
+  function renderAll(){
+    applyTheme();
+    backBtn.classList.toggle('hidden', state.phase==='picker');
+    pickerView.classList.toggle('hidden', state.phase!=='picker');
+    setupView.classList.toggle('hidden', state.phase!=='setup');
+    sheetView.classList.toggle('hidden', state.phase!=='game');
+    bottomBar.classList.toggle('hidden', state.phase!=='game');
+    playerTabsEl.classList.toggle('hidden', state.phase!=='game');
+
+    if(state.phase==='picker'){
+      brandName.textContent = 'Würfelpad';
+      renderPicker();
+    } else {
+      var def = GAMES[state.game];
+      brandName.textContent = def.label;
+      if(state.phase==='setup'){
+        setupTitle.textContent = 'Wer spielt ' + def.label + '?';
+        rulesetNote.innerHTML = RULESET_NOTES[state.game];
+        renderSetupRows();
+        updateStartBtn();
+      } else if(state.phase==='game'){
+        renderPlayerTabs();
+        renderSheet();
+        renderBottomActions();
+      }
+    }
+  }
+
+  load();
+  if(!state.players) state.players = [];
+  if(!state.setupNames || !state.setupNames.length) state.setupNames = ['',''];
+  if(state.phase==='game' && (!state.players.length || !state.game)) state.phase = state.game ? 'setup' : 'picker';
+  if(state.phase==='setup' && !state.game) state.phase = 'picker';
+  // saved games from the old generic Clever layout don't fit the pad layout — start those sheets fresh
+  if(state.game && GAMES[state.game].layout==='gsc'){
+    state.players.forEach(function(p){ if(!p.scores || p.scores.v!==2) p.scores = freshScoresFor(state.game); });
+    if(!state.gscRound) state.gscRound = 1;
+  }
+  renderAll();
+})();
+</script>
