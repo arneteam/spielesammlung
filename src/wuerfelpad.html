@@ -1,3 +1,12 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Würfelpad">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#13302A">
 <title>Würfelpad</title>
 <style>
   :root{
@@ -63,13 +72,18 @@
 
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body{
     background:var(--t-page, var(--paper)); color:var(--ink); font-family:var(--font-body);
-    -webkit-tap-highlight-color:transparent; overscroll-behavior-y:contain; padding-bottom:88px;
+    -webkit-tap-highlight-color:transparent; overscroll-behavior-y:contain;
+    padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px));
+    padding-left:env(safe-area-inset-left, 0px); padding-right:env(safe-area-inset-right, 0px);
     transition: background .2s;
   }
   @media (prefers-reduced-motion: reduce){ *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; } }
-  button{font-family:inherit;}
+  /* iPhone: no double-tap zoom delay, no text selection / callout on long press while tapping cells */
+  button{ font-family:inherit; touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .ptab, .tile, .gsc-cell{ touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   button:focus-visible, input:focus-visible{ outline:2px solid var(--t-accent, #C23B3B); outline-offset:2px; }
 
   /* ---------- Header ---------- */
@@ -78,6 +92,7 @@
     background: linear-gradient(180deg, var(--t-head-from,#1F4C3A), var(--t-head-to,#13302A));
     color: var(--t-accent-ink, #FBF6EF);
     box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+    padding-top:env(safe-area-inset-top, 0px);
   }
   body.theme-gsc header.app-top{ box-shadow:0 0 18px rgba(57,224,206,0.25), 0 3px 10px rgba(0,0,0,0.5); }
   body.theme-doppelt header.app-top{ box-shadow:0 0 18px rgba(242,82,176,0.25), 0 3px 10px rgba(0,0,0,0.5); }
@@ -171,7 +186,7 @@
   .num-input:focus{ border-bottom-color:var(--t-accent,#C23B3B); outline:none; }
   .num-input::placeholder{ color:var(--ink-soft); opacity:0.5; }
   .fixed-choice{ display:flex; gap:6px; flex:0 0 auto; }
-  .fixed-choice button{ border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--ink-soft); font-family:var(--font-mono); font-size:0.84rem; padding:6px 11px; cursor:pointer; font-variant-numeric:tabular-nums; }
+  .fixed-choice button{ border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--ink-soft); font-family:var(--font-mono); font-size:0.9rem; min-width:44px; min-height:38px; padding:6px 12px; cursor:pointer; font-variant-numeric:tabular-nums; }
   .fixed-choice button.yes.on{ background:var(--t-accent,#C23B3B); color:var(--t-accent-ink,#fff); border-color:var(--t-accent,#C23B3B); font-weight:700; }
   .fixed-choice button.no.on{ background:var(--ink-soft); color:var(--paper); border-color:var(--ink-soft); }
   .bonus-row{ background:linear-gradient(90deg, rgba(156,122,30,0.08), transparent); padding:11px 14px; display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; color:var(--ink-soft); border-top:1px solid var(--line); }
@@ -179,7 +194,7 @@
   .kbonus-row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--line); }
   .kbonus-row .row-label .name{ font-size:0.88rem; }
   .stepper{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
-  .stepper button{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink); font-size:1rem; cursor:pointer; }
+  .stepper button{ width:38px; height:38px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ink); font-size:1rem; cursor:pointer; }
   .stepper button:disabled{ opacity:0.3; cursor:not-allowed; }
   .stepper .count{ font-family:var(--font-mono); min-width:1.4em; text-align:center; font-variant-numeric:tabular-nums; }
   .subtotal{ display:flex; justify-content:space-between; padding:12px 14px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:0.9rem; color:var(--ink-soft); background:var(--paper); border-top:1px solid var(--line); }
@@ -210,7 +225,7 @@
   .scell .slabel{ font-size:0.64rem; color:var(--ink-soft); font-family:var(--font-mono); white-space:nowrap; }
 
   .sumcell{ flex:0 0 auto; min-width:38px; display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .sumcell input{ width:38px; height:36px; text-align:center; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:0.88rem; padding:0 2px; }
+  .sumcell input{ width:38px; height:36px; text-align:center; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:16px; padding:0 2px; }
   .sumcell input:focus{ border-color:var(--t-accent,#C23B3B); outline:none; }
   .sumcell .shint{ font-size:0.64rem; color:var(--ink-soft); font-family:var(--font-mono); white-space:nowrap; }
 
@@ -222,7 +237,7 @@
 
   .nline-wrap{ display:flex; gap:4px; overflow-x:auto; padding:12px 14px; }
   .nline-cell{ flex:0 0 auto; width:40px; display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .nline-cell input{ width:40px; text-align:center; border:1px solid var(--line); border-radius:7px; background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:0.86rem; padding:6px 2px; }
+  .nline-cell input{ width:40px; text-align:center; border:1px solid var(--line); border-radius:7px; background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:16px; padding:6px 2px; }
   .nline-cell input:disabled{ opacity:0.6; }
   .nline-cell .star{ font-size:0.6rem; color:var(--ink-soft); font-family:var(--font-mono); }
 
@@ -230,7 +245,7 @@
   .pairgroup{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:3px; }
   .pairgroup .phint{ font-size:0.6rem; color:var(--ink-soft); font-family:var(--font-mono); white-space:nowrap; }
   .pairgroup .pboxes{ display:flex; align-items:center; gap:4px; }
-  .pairgroup input{ width:34px; height:34px; text-align:center; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:0.84rem; }
+  .pairgroup input{ width:34px; height:34px; text-align:center; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:16px; }
   .pairgroup .pminus{ color:var(--ink-soft); font-size:0.9rem; }
 
   /* bonus badges — small abstract glyphs, not literal brand icons */
@@ -255,17 +270,18 @@
   .fox-row{ display:flex; align-items:center; gap:10px; padding:12px 14px; }
 
   /* ---------- Qwixx ---------- */
-  .qrow{ display:flex; align-items:center; gap:8px; padding:8px 10px; }
-  .qrow .qlabel{ width:3.2rem; flex:0 0 auto; font-weight:700; font-size:0.86rem; color:#fff; text-align:center; border-radius:8px; padding:6px 0; }
-  .qcells{ display:flex; gap:4px; overflow-x:auto; flex:1; }
-  .qcell{ flex:0 0 auto; width:30px; height:34px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--font-mono); font-size:0.78rem; cursor:pointer; }
-  .qcell.on{ color:#fff; font-weight:700; }
-  .qlock{ flex:0 0 auto; width:34px; height:34px; border-radius:8px; border:1px solid var(--line); background:var(--paper); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  /* each row is a coloured band like the paper sheet; 11 cells + lock always fit the phone width, no sideways scrolling */
+  .qrow{ display:flex; align-items:center; gap:3px; padding:5px; margin:6px; border-radius:10px; background:var(--rc); }
+  .qrow .qlabel{ display:none; }
+  .qcells{ display:flex; gap:3px; flex:1; min-width:0; }
+  .qcell{ flex:1 1 0; min-width:0; height:44px; padding:0; border-radius:6px; border:none; background:color-mix(in srgb, var(--rc) 14%, #fff); color:var(--rc); font-family:var(--font-mono); font-size:clamp(0.72rem, 3.4vw, 1rem); font-weight:700; cursor:pointer; touch-action:manipulation; }
+  .qcell.on{ color:#fff; background:#1B2420 !important; }
+  .qlock{ flex:0 0 auto; width:clamp(28px, 8vw, 40px); height:44px; border-radius:50%; border:none; background:color-mix(in srgb, var(--rc) 14%, #fff); color:var(--rc); cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .qlock:disabled{ opacity:0.3; cursor:not-allowed; }
   .qlock.on{ background:var(--t-gold,#B8860E); border-color:var(--t-gold,#B8860E); }
   .qlock svg{ width:14px; height:14px; }
   .qpenalty{ display:flex; align-items:center; gap:10px; padding:12px 14px; }
-  .qpbox{ width:30px; height:30px; border-radius:7px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:700; color:var(--ink-soft); }
+  .qpbox{ width:40px; height:40px; border-radius:7px; border:1px solid var(--line); background:var(--paper); cursor:pointer; font-weight:700; color:var(--ink-soft); }
   .qpbox.on{ background:#C7342E; border-color:#C7342E; color:#fff; }
 
   /* ---------- Ganz schön clever: sheet laid out like the paper pad ---------- */
@@ -303,19 +319,18 @@
 
   .gsc-rounds{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
   .gsc-round{ display:flex; flex-direction:column; align-items:center; gap:5px; }
-  .gsc-round button{ width:34px; height:34px; border-radius:50%; border:1.5px solid rgba(244,242,234,0.45); background:transparent; color:#F4F2EA; font-family:var(--font-mono); font-weight:700; cursor:pointer; padding:0; }
+  .gsc-round button{ width:40px; height:40px; border-radius:50%; border:1.5px solid rgba(244,242,234,0.45); background:transparent; color:#F4F2EA; font-family:var(--font-mono); font-weight:700; cursor:pointer; padding:0; }
   .gsc-round button.past{ background:rgba(244,242,234,0.16); }
   .gsc-round button.cur{ background:var(--t-accent); border-color:var(--t-accent); color:#121317; }
   .gsc-round button.off{ opacity:0.25; text-decoration:line-through; cursor:not-allowed; }
   .gsc-trk{ display:flex; align-items:center; gap:8px; margin-top:10px; }
-  .gsc-trk .lbl{ display:flex; align-items:center; gap:6px; width:6.2em; flex:0 0 auto; font-size:0.66rem; color:rgba(244,242,234,0.72); }
+  .gsc-trk .lbl{ display:flex; flex-direction:column; align-items:center; gap:3px; width:3.4em; flex:0 0 auto; font-size:0.62rem; color:rgba(244,242,234,0.72); white-space:nowrap; }
   .gsc-trk .lbl .gchip{ opacity:1; }
   .gsc-trk .slots{ display:flex; flex-wrap:wrap; gap:5px; flex:1; }
-  .gsc-trk .slots button{ width:24px; height:24px; border-radius:50%; border:1.5px dashed rgba(244,242,234,0.22); background:transparent; position:relative; padding:0; cursor:pointer; color:#F4F2EA; }
+  .gsc-trk .slots button{ width:32px; height:32px; border-radius:50%; border:1.5px dashed rgba(244,242,234,0.22); background:transparent; position:relative; padding:0; cursor:pointer; color:#F4F2EA; }
   .gsc-trk .slots button.earned{ border:2px solid #F4F2EA; }
   .gsc-trk .slots button.used{ border:2px solid rgba(244,242,234,0.45); }
   .gsc-trk .slots button .gx{ position:absolute; inset:3px; width:calc(100% - 6px); height:calc(100% - 6px); color:#F4F2EA; }
-  .gsc-trk .count{ font-family:var(--font-mono); font-size:0.7rem; color:rgba(244,242,234,0.72); white-space:nowrap; }
   .gsc-legend{ display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:11px; padding-top:9px; border-top:1px solid rgba(244,242,234,0.12); font-size:0.64rem; color:rgba(244,242,234,0.7); }
   .gsc-legend span{ display:inline-flex; align-items:center; gap:5px; }
   .gsc-legend .gchip{ opacity:1; width:18px; height:18px; }
@@ -327,13 +342,33 @@
   .gsc-sum .fox .gchip{ opacity:1; }
   .gsc-sum .box.total{ background:var(--t-accent); border-color:var(--t-accent); color:#121317; }
 
+  /* ---- dice tray: the dice you used lie on the sheet, the rest on the silver platter ---- */
+  .tray{ border:2px solid rgba(244,242,234,0.28); border-radius:14px; padding:8px 10px 10px; background:#16171C; color:#F4F2EA; margin-bottom:10px; }
+  .tray-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 8px; }
+  .tray-head .t{ font-weight:800; text-transform:uppercase; letter-spacing:0.07em; font-size:0.76rem; }
+  .tray-head button{ border:1px solid rgba(244,242,234,0.3); background:transparent; color:#F4F2EA; border-radius:999px; padding:7px 12px; font-size:0.74rem; cursor:pointer; min-height:34px; }
+  .tray-slots{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .tray-slot{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .tray-slot .ph{ width:52px; height:52px; border-radius:11px; border:2px dashed rgba(244,242,234,0.28); display:flex; align-items:center; justify-content:center; font-size:0.62rem; color:rgba(244,242,234,0.45); }
+  .tray-slot .cap{ font-size:0.62rem; color:rgba(244,242,234,0.6); }
+  .tray-row{ display:flex; align-items:center; gap:8px; margin-top:10px; min-height:44px; }
+  .tray-row .lbl{ width:5.6em; flex:0 0 auto; font-size:0.66rem; color:rgba(244,242,234,0.7); line-height:1.2; }
+  .tray-row .dice{ display:flex; flex-wrap:wrap; gap:6px; flex:1; }
+  .tray-row .none{ font-size:0.68rem; color:rgba(244,242,234,0.38); }
+  .tray-row.platter .dice{ padding:5px; border-radius:22px; background:linear-gradient(135deg, rgba(200,205,212,0.22), rgba(140,146,156,0.12)); min-height:44px; align-items:center; }
+  .die{ width:44px; height:44px; border-radius:9px; border:none; padding:0; background:var(--dc); color:#121317; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:inset 0 -3px 0 rgba(0,0,0,0.22), 0 2px 5px rgba(0,0,0,0.35); }
+  .die.big{ width:52px; height:52px; border-radius:11px; }
+  .die.blank{ opacity:0.85; }
+  .die svg rect{ display:none; }
+  .tray-hint{ font-size:0.64rem; color:rgba(244,242,234,0.55); margin-top:8px; }
+
   .die-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
   .die-grid button{ aspect-ratio:1; border-radius:12px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
   .die-grid button:disabled{ opacity:0.22; cursor:not-allowed; }
   .die-hint{ font-size:0.82rem; color:var(--ink-soft); margin:-8px 0 14px; }
 
   /* ---------- Bottom bar ---------- */
-  .bottom-bar{ position:fixed; left:0; right:0; bottom:0; z-index:20; background:linear-gradient(0deg, var(--t-head-to,#13302A), var(--t-head-from,#1F4C3A)); color:var(--t-accent-ink,#FBF6EF); display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); box-shadow:0 -3px 10px rgba(0,0,0,0.18); }
+  .bottom-bar{ position:fixed; left:0; right:0; bottom:0; z-index:20; background:linear-gradient(0deg, var(--t-head-to,#13302A), var(--t-head-from,#1F4C3A)); color:var(--t-accent-ink,#FBF6EF); display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); box-shadow:0 -3px 10px rgba(0,0,0,0.18); }
   body.theme-qwixx .bottom-bar{ color:#1B2420; border-top:3px solid #C7342E; }
   .bottom-bar .total-block .label{ font-size:0.66rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.7; }
   .bottom-bar .total-block .num{ font-family:var(--t-display,var(--font-display)); font-size:1.5rem; font-variant-numeric:tabular-nums; line-height:1; }
@@ -341,7 +376,7 @@
   .ghost-btn{ border:1px solid rgba(255,255,255,0.35); background:transparent; color:inherit; border-radius:10px; padding:10px 12px; font-size:0.82rem; cursor:pointer; white-space:nowrap; }
   body.theme-qwixx .ghost-btn{ border-color:rgba(0,0,0,0.25); }
   @media (max-width:420px){
-    .bottom-bar{ padding-left:12px; padding-right:12px; }
+    .bottom-bar{ padding-left:max(12px, env(safe-area-inset-left, 0px)); padding-right:max(12px, env(safe-area-inset-right, 0px)); }
     .bottom-bar .actions{ gap:5px; min-width:0; }
     .ghost-btn, .next-btn{ padding:9px 8px; font-size:0.76rem; }
   }
@@ -411,7 +446,7 @@
     <h2 id="dieTitle">Würfelwert</h2>
     <div class="die-hint" id="dieHint"></div>
     <div class="die-grid" id="dieGrid"></div>
-    <button class="drawer-close hidden" id="dieClear">Feld leeren</button>
+    <button class="drawer-close hidden" id="dieAlt"></button>
     <button class="drawer-close" id="dieCancel">Abbrechen</button>
   </div>
 </div>
@@ -425,13 +460,14 @@
   var PIP_LAYOUTS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
   function pipSVG(face, size, color){
     size = size || 18;
-    var cell = size/3, dots = PIP_LAYOUTS[face] || [], r = cell*0.17;
+    var pad = size*0.26, step = (size - 2*pad)/2, dots = PIP_LAYOUTS[face] || [], r = size*0.085;
     var circles = dots.map(function(idx){
-      var col = idx%3, row = Math.floor(idx/3), cx = col*cell+cell/2, cy = row*cell+cell/2;
-      return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+(color||'currentColor')+'"/>';
+      var col = idx%3, row = Math.floor(idx/3), cx = pad + col*step, cy = pad + row*step;
+      // colours go in style, not attributes: presentation attributes can't resolve var(--…)
+      return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" style="fill:'+(color||'currentColor')+'"/>';
     }).join('');
     return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" aria-hidden="true">' +
-      '<rect x="1" y="1" width="'+(size-2)+'" height="'+(size-2)+'" rx="'+(size*0.18)+'" fill="none" stroke="'+(color||'currentColor')+'" stroke-opacity="0.55" stroke-width="1.3"/>' + circles + '</svg>';
+      '<rect x="1" y="1" width="'+(size-2)+'" height="'+(size-2)+'" rx="'+(size*0.18)+'" style="fill:none;stroke:'+(color||'currentColor')+'" stroke-opacity="0.55" stroke-width="1.3"/>' + circles + '</svg>';
   }
   function lockSVG(size, color){
     size = size||14;
@@ -753,10 +789,11 @@
   var dieTitle = document.getElementById('dieTitle');
   var dieHint = document.getElementById('dieHint');
   var dieGrid = document.getElementById('dieGrid');
-  var dieClear = document.getElementById('dieClear');
-  var diePick = null;
+  var dieAlt = document.getElementById('dieAlt');
+  var dieAltFn = null;
   function closeDiePicker(){ dieOverlay.classList.remove('open'); }
-  function openDiePicker(title, hint, allowed, canClear, onPick){
+  // alt: optional second action under the dice, e.g. {label:'Feld leeren', fn:...}
+  function openDiePicker(title, hint, allowed, alt, onPick){
     dieTitle.textContent = title; dieHint.textContent = hint || '';
     dieGrid.innerHTML = '';
     for(var v=1; v<=6; v++){
@@ -767,11 +804,12 @@
         dieGrid.appendChild(b);
       })(v);
     }
-    dieClear.classList.toggle('hidden', !canClear);
-    diePick = onPick;
+    dieAlt.classList.toggle('hidden', !alt);
+    dieAlt.textContent = alt ? alt.label : '';
+    dieAltFn = alt ? alt.fn : null;
     dieOverlay.classList.add('open');
   }
-  dieClear.addEventListener('click', function(){ closeDiePicker(); if(diePick) diePick(null); });
+  dieAlt.addEventListener('click', function(){ closeDiePicker(); if(dieAltFn) dieAltFn(); });
   document.getElementById('dieCancel').addEventListener('click', closeDiePicker);
   dieOverlay.addEventListener('click', function(e){ if(e.target===dieOverlay) closeDiePicker(); });
 
@@ -841,6 +879,7 @@
     state.players = names.map(function(n){ return freshPlayer(n, state.game); });
     state.activePlayerIndex = 0;
     state.gscRound = 1;
+    state.tray = emptyTray();
     state.phase = 'game';
     save(); renderAll();
   });
@@ -884,6 +923,7 @@
     }
   }
   function advanceRoundRobin(){
+    state.tray = emptyTray();
     if(state.players.length <= 1) return;
     state.activePlayerIndex = (state.activePlayerIndex+1) % state.players.length;
     var name = state.players[state.activePlayerIndex].name;
@@ -1018,12 +1058,11 @@
         ? [2,3,4,5,6,7,8,9,10,11,12]
         : [12,11,10,9,8,7,6,5,4,3,2];
       var rowEl = document.createElement('div'); rowEl.className = 'qrow';
-      var label = document.createElement('div'); label.className = 'qlabel'; label.style.background = r.color; label.textContent = r.label;
-      rowEl.appendChild(label);
+      rowEl.style.setProperty('--rc', r.color); rowEl.setAttribute('aria-label', r.label);
       var cellsWrap = document.createElement('div'); cellsWrap.className = 'qcells';
       values.forEach(function(v, idx){
         var btn = document.createElement('button'); btn.className = 'qcell'+(rd.crossed[idx]?' on':''); btn.textContent = v;
-        if(rd.crossed[idx]){ btn.style.background = r.color; btn.style.borderColor = r.color; }
+        btn.setAttribute('aria-label', r.label + ' ' + v);
         btn.addEventListener('click', function(){
           if(rd.crossed[idx]){ rd.crossed[idx] = false; }
           else {
@@ -1037,7 +1076,7 @@
       rowEl.appendChild(cellsWrap);
       var cnt = rd.crossed.filter(Boolean).length;
       var lockBtn = document.createElement('button'); lockBtn.className = 'qlock'+(rd.locked?' on':'');
-      lockBtn.innerHTML = lockSVG(14, rd.locked ? '#fff' : 'var(--ink-soft)');
+      lockBtn.innerHTML = lockSVG(14, rd.locked ? '#fff' : r.color);
       lockBtn.disabled = !rd.locked && cnt<5;
       lockBtn.addEventListener('click', function(){ rd.locked = !rd.locked; save(); renderAll(true); });
       rowEl.appendChild(lockBtn);
@@ -1280,6 +1319,7 @@
       trackCard.appendChild(trackWrap);
       sheetView.appendChild(trackCard);
     }
+    sheetView.appendChild(renderDiceTray(def));
 
     def.sections.forEach(function(sec){
       sheetView.appendChild(renderSectionCard(sec, sc.sections[sec.key], onChange, def));
@@ -1308,6 +1348,86 @@
     sheetView.appendChild(sumCard);
 
     bbTotal.textContent = totals.grand;
+  }
+
+  // ===================================================================
+  // Dice tray (Clever series): chosen dice lie on the sheet, the rest on the silver platter.
+  // The dice are physical and shared, so the tray belongs to the turn, not to a player.
+  // ===================================================================
+  function emptyTray(){ return { chosen:[], platter:[] }; }
+  function trayDice(def){
+    return [{ key:'weiss', label:'Weiß', color:'#F4F2EA' }].concat(def.sections.map(function(s){ return { key:s.key, label:s.label, color:s.color }; }));
+  }
+  function renderDiceTray(def){
+    var tray = state.tray || (state.tray = emptyTray());
+    var dice = trayDice(def);
+    function info(k){ return dice.filter(function(d){ return d.key===k; })[0]; }
+    function change(){ save(); renderAll(); }
+    function dieEl(d, v, big){
+      var b = document.createElement('button'); b.className = 'die' + (big ? ' big' : '') + (v ? '' : ' blank');
+      b.style.setProperty('--dc', d.color);
+      if(v) b.innerHTML = pipSVG(v, big ? 40 : 34, '#121317');
+      b.setAttribute('aria-label', d.label + (v ? ' ' + v : ''));
+      return b;
+    }
+    var used = tray.chosen.map(function(c){ return c.k; }).concat(tray.platter);
+    var cup = dice.filter(function(d){ return used.indexOf(d.key) < 0; });
+
+    var el = document.createElement('div'); el.className = 'tray';
+    var head = document.createElement('div'); head.className = 'tray-head';
+    head.innerHTML = '<span class="t">Würfel · ' + escapeHtml(state.players[state.activePlayerIndex].name) + '</span>';
+    var reset = document.createElement('button'); reset.textContent = 'Alle zurück in den Becher';
+    reset.addEventListener('click', function(){ state.tray = emptyTray(); change(); });
+    head.appendChild(reset);
+    el.appendChild(head);
+
+    var slots = document.createElement('div'); slots.className = 'tray-slots';
+    for(var i=0; i<3; i++){
+      (function(i){
+        var s = document.createElement('div'); s.className = 'tray-slot';
+        var c = tray.chosen[i];
+        if(c){
+          var b = dieEl(info(c.k), c.v, true);
+          b.title = 'Zurück in den Becher';
+          b.addEventListener('click', function(){ tray.chosen.splice(i, 1); change(); });
+          s.appendChild(b);
+        } else {
+          var ph = document.createElement('div'); ph.className = 'ph'; ph.textContent = 'frei'; s.appendChild(ph);
+        }
+        var cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = (i+1) + '. Wurf';
+        s.appendChild(cap);
+        slots.appendChild(s);
+      })(i);
+    }
+    el.appendChild(slots);
+
+    function row(cls, label, list, emptyText, onTap){
+      var r = document.createElement('div'); r.className = 'tray-row ' + cls;
+      r.innerHTML = '<div class="lbl">' + label + '</div>';
+      var wrap = document.createElement('div'); wrap.className = 'dice';
+      if(!list.length) wrap.innerHTML = '<span class="none">' + emptyText + '</span>';
+      list.forEach(function(d){ var b = dieEl(d, null, false); b.addEventListener('click', function(){ onTap(d); }); wrap.appendChild(b); });
+      r.appendChild(wrap);
+      el.appendChild(r);
+    }
+    row('platter', 'Silber&shy;tablett', tray.platter.map(info), 'leer', function(d){
+      tray.platter.splice(tray.platter.indexOf(d.key), 1); change();
+    });
+    row('cup', 'Im Becher', cup, 'alle Würfel liegen', function(d){
+      var full = tray.chosen.length >= 3;
+      openDiePicker('Würfel ' + d.label,
+        full ? 'Du hast schon 3 Würfel gewählt – nur noch aufs Silbertablett.' : 'Welche Augenzahl zeigt er? Dann liegt er auf deinem Blatt.',
+        function(){ return !full; },
+        { label:'Aufs Silbertablett legen', fn:function(){ tray.platter.push(d.key); change(); } },
+        function(v){
+          tray.chosen.push({ k:d.key, v:v }); change();
+          if(cup.length > 1) showToast('Würfel mit weniger Augen aufs Silbertablett', 2200);
+        });
+    });
+    var hint = document.createElement('div'); hint.className = 'tray-hint';
+    hint.textContent = 'Würfel im Becher antippen. Gewählte Würfel liegen auf dem Blatt, kleinere kommen aufs Silbertablett. Bei „Weiter“ geht alles zurück in den Becher.';
+    el.appendChild(hint);
+    return el;
   }
 
   // ===================================================================
@@ -1395,7 +1515,8 @@
       var earned = tot.earned[t.k], used = Math.min(sc.used[t.k] || 0, earned);
       var row = document.createElement('div'); row.className = 'gsc-trk';
       var lbl = document.createElement('div'); lbl.className = 'lbl';
-      lbl.appendChild(gscChip(def, {kind:t.k}, true)); lbl.appendChild(document.createTextNode(t.label));
+      lbl.appendChild(gscChip(def, {kind:t.k}, true)); lbl.appendChild(document.createTextNode((earned - used) + ' frei'));
+      lbl.title = t.label;
       row.appendChild(lbl);
       var slots = document.createElement('div'); slots.className = 'slots';
       for(var i=0; i<Math.max(7, earned); i++){
@@ -1412,8 +1533,6 @@
         })(i);
       }
       row.appendChild(slots);
-      var cnt = document.createElement('span'); cnt.className = 'count'; cnt.textContent = (earned - used) + ' frei';
-      row.appendChild(cnt);
       top.appendChild(row);
     });
     var legend = document.createElement('div'); legend.className = 'gsc-legend';
@@ -1423,6 +1542,8 @@
     });
     top.appendChild(legend);
     board.appendChild(top);
+    var tray = renderDiceTray(def); tray.style.marginBottom = '0';
+    board.appendChild(tray);
 
     // ---- Gelb + Blau side by side, like on the pad ----
     var duo = document.createElement('div'); duo.className = 'gsc-duo';
@@ -1506,7 +1627,8 @@
           var strict = key==='lila' && prev!==null && prev!==6;
           openDiePicker(title + ' · Feld ' + (i+1),
             (mult > 1 ? 'Würfelwert wählen, zählt ×' + mult + '. ' : 'Würfelwert wählen. ') + (strict ? 'Muss größer als ' + prev + ' sein.' : ''),
-            function(d){ return !strict || d > prev; }, i===filled-1,
+            function(d){ return !strict || d > prev; },
+            i===filled-1 ? { label:'Feld leeren', fn:function(){ commit(function(){ arr[i] = null; }); } } : null,
             function(d){ commit(function(){ arr[i] = d; }); });
         });
         col.appendChild(b); col.appendChild(sub(mult > 1 ? '×' + mult : '', false)); col.appendChild(slot(key.charAt(0)+i, cfg.bonus[i]));
@@ -1570,7 +1692,7 @@
   function goNewGame(){
     if(!confirm('Neues Spiel starten? Die aktuellen Punktestände werden gelöscht.')) return;
     state.setupNames = state.players.map(function(p){ return p.name; });
-    state.players = []; state.gscRound = 1; state.phase = 'setup'; save(); renderAll();
+    state.players = []; state.gscRound = 1; state.tray = emptyTray(); state.phase = 'setup'; save(); renderAll();
   }
 
   function renderBottomActions(){
@@ -1619,7 +1741,24 @@
         renderBottomActions();
       }
     }
+    syncWakeLock();
   }
+
+  // keep the iPhone screen on while a game is open (Safari 16.4+), released on picker/setup or in background
+  var wakeLock = null;
+  function syncWakeLock(){
+    if(!('wakeLock' in navigator)) return;
+    var want = state.phase==='game' && document.visibilityState==='visible';
+    if(want && !wakeLock){
+      wakeLock = 'pending';
+      navigator.wakeLock.request('screen').then(function(l){
+        wakeLock = l; l.addEventListener('release', function(){ wakeLock = null; });
+      }).catch(function(){ wakeLock = null; });
+    } else if(!want && wakeLock && wakeLock !== 'pending'){
+      wakeLock.release(); wakeLock = null;
+    }
+  }
+  document.addEventListener('visibilitychange', syncWakeLock);
 
   load();
   if(!state.players) state.players = [];
