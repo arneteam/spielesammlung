@@ -1,0 +1,15 @@
+{
+  "name": "Würfelpad",
+  "short_name": "Würfelpad",
+  "description": "Digitaler Spielblock für Kniffel, Qwixx und die Clever-Reihe",
+  "lang": "de",
+  "start_url": "./wuerfelpad.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#13302A",
+  "theme_color": "#13302A",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
